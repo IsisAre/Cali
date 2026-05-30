@@ -126,6 +126,8 @@
       @keyframes shimmer{0%{background-position:-200% center;}100%{background-position:200% center;}}
       @keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0.4);}50%{box-shadow:0 0 0 10px rgba(212,175,55,0);}}
       @keyframes expandBar{from{width:0;}to{width:5rem;}}
+      @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+      .animate-bounce { animation: bounce 0.6s ease-in-out infinite; }
       .anim-fade-up,.anim-fade-in,.anim-slide-left,.anim-slide-right,.anim-scale-in{opacity:0;}
       .anim-fade-up.is-visible{animation:fadeSlideUp 0.7s ease forwards;}
       .anim-fade-in.is-visible{animation:fadeIn 0.7s ease forwards;}
@@ -185,7 +187,7 @@
 <div class="h-screen w-80 fixed left-0 top-0 z-[60] bg-surface shadow-xl flex flex-col py-6 -translate-x-full transition-transform duration-300 ease-in-out md:hidden" id="drawer">
   <div class="px-6 pb-6 flex justify-between items-center border-b border-outline-variant/20">
     <span class="font-headline-lg text-primary">Cali Inmobiliaria</span>
-    <button onclick="toggleDrawer()" class="p-2 rounded-full hover:bg-surface-variant"><span class="material-symbols-outlined">close</span></button>
+      <button onclick="toggleDrawer()" class="p-2 rounded-full hover:bg-surface-variant"><span class="material-symbols-outlined">close</span></button>
   </div>
   <div class="flex flex-col gap-3 pt-6 px-4">
     <a class="bg-secondary-container text-on-secondary-container rounded-full flex items-center gap-4 px-5 py-3 font-label-bold text-label-bold" href="#" onclick="toggleDrawer()"><span class="material-symbols-outlined">home</span> <span data-i18n="nav-home">Inicio</span></a>
@@ -349,7 +351,6 @@
     <div class="h-96 flex flex-col">
       <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
         <div class="flex items-start gap-2"><div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm" data-i18n="chat-greeting">¡Hola! 👋 Soy el asistente virtual de <strong>Cali Constructora</strong>. Puedo ayudarte con información sobre nuestros más de 20 servicios. ¿En qué te puedo ayudar hoy?</p></div></div>
-        <div class="flex items-start gap-2"><div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm" data-i18n="chat-prompt">Pregúntame sobre piscinas, pisos, techos, aires acondicionados, bienes raíces, gamer rooms y mucho más 🏗️</p></div></div>
       </div>
       <div class="border-t p-3 flex gap-2 bg-white">
         <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" data-i18n-placeholder="chat-placeholder">
@@ -360,451 +361,50 @@
 </div>
 
 <script>
-  // ==================== SERVICIOS COMPLETOS TRADUCIDOS A ESPAÑOL E INGLÉS ====================
+  // ========== CONFIGURACIÓN DEL WORKER ==========
+  // *** IMPORTANTE: Tu Worker de Cloudflare ***
+  const WORKER_URL = 'https://cali-chat.ardon7390.workers.dev';
+
+  // ========== SERVICIOS COMPLETOS ==========
   const serviciosData = { es: [], en: [] };
 
-  // ----- ESPAÑOL (descripciones extensas) -----
   serviciosData.es = [
-    { nombre: "Diseño y Construcción de Piscinas", imagen: "Piscina2.png", descripcion: "Piscinas residenciales modernas, remodelación y paisajismo.", caracteristicas: ["Diseños modernos y elegantes", "Acabados de alta calidad", "Trabajo profesional garantizado", "Diseño de jardinería", "Paisajismo y áreas verdes"], detalle: "Creamos la piscina de tus sueños con acabados premium y diseño personalizado. Transformamos tu jardín en un paraíso. Ofrecemos mantenimiento periódico y sistemas de filtración de última generación. Nuestros diseños se adaptan a cualquier espacio, por pequeño que sea. Garantizamos la máxima durabilidad y eficiencia energética. Trabajamos con revestimientos de liner, gunita o fibra de vidrio. Además, integramos sistemas de iluminación LED subacuática, calefacción solar y cascadas decorativas. El proceso incluye estudio de suelo, excavación, instalación hidráulica, eléctrica y acabados con mosaicos o piedra natural." },
-    { nombre: "Consultorios Médicos, Clínicas y Laboratorios", imagen: "medico2.png", descripcion: "Espacios que cuidan, diseñados para sanar. Cumplimos normativas.", caracteristicas: ["Diseño arquitectónico personalizado", "Construcción y remodelación", "Distribución funcional", "Materiales certificados", "Cumplimiento de normativas"], detalle: "Especialistas en diseño y construcción de espacios de salud funcionales, modernos y seguros. Cumplimos estrictamente con las normativas del Ministerio de Salud y estándares internacionales. Creamos ambientes que transmiten confianza y bienestar a sus pacientes. Utilizamos materiales antimicrobianos, pisos vinílicos de alta resistencia, pinturas hipoalergénicas y sistemas de ventilación con filtros HEPA. Optimizamos los flujos de trabajo para médicos y personal asistencial. Realizamos consultorios médicos, clínicas odontológicas, centros de diagnóstico, laboratorios clínicos y áreas de esterilización. Incluimos mobiliario especializado, señalética y cumplimiento de accesibilidad universal." },
-    { nombre: "Carpintería y Cerrajería Profesional", imagen: "Carpinteria2.png", descripcion: "Puertas, muebles a medida, closets, cocinas y más.", caracteristicas: ["Diseños a medida", "Instalación profesional", "Materiales de calidad", "Cambio de chapas", "Reparación de puertas"], detalle: "Fabricamos muebles únicos y funcionales con maderas sólidas (caoba, cedro, pino) y materiales ecológicos como MDF de alta densidad. Realizamos cocinas integrales, closets modulares, bibliotecas, recepciones para oficinas y muebles de baño. Nuestro servicio de cerrajería incluye instalación y reparación de chapas de alta seguridad, cerraduras biométricas, cambio de cilindros y duplicado de llaves. Atención rápida y garantizada. También reparamos puertas de madera y metal, bisagras, y realizamos mantenimiento de herrajes. Entregamos acabados perfectos (laca, barniz, tintes). Visita de medición y cotización sin costo." },
-    { nombre: "Instalación de Pisos", imagen: "renovarpisos2.png", descripcion: "Piso tipo madera, cerámico, porcelanato 60x60 y más medidas.", caracteristicas: ["Acabados de alta calidad", "Instalación profesional", "Diseños modernos", "Piso tipo madera", "Cerámico", "Porcelanato"], detalle: "Renovamos sus pisos con materiales de primera calidad (porcelanato, cerámica, vinilo, laminado, madera sólida) y mano de obra experta. Instalamos pisos de gran formato (60x60, 80x80, 120x60) para un acabado más moderno y minimalista. Realizamos nivelación de superficies, aplicación de cemento autonivelante, y colocación con sistemas de pega y separadores de precisión. Asesoramos en la elección del mejor producto según el tránsito, humedad y estilo deseado. Acabados antideslizantes para exteriores y baños. Dejamos su hogar limpio y listo para disfrutar." },
-    { nombre: "Renovación de Techos", imagen: "renovartechos.png", descripcion: "Instalamos y renovamos lámina, teja, arquiteja, shingles americanos.", caracteristicas: ["Trabajo profesional", "Materiales de alta calidad", "Instalación garantizada", "Lámina", "Teja", "Arquiteja", "Shingles"], detalle: "Proteja su hogar con techos resistentes y modernos. Instalamos techos de lámina galvanizada, teja de barro, teja ecológica (arquiteja) y shingles asfálticos americanos. Utilizamos materiales reflectantes que reducen la temperatura interior hasta en 5°C, ahorrando energía. También ofrecemos techos verdes y sistemas de recolección de agua de lluvia. Realizamos estructuras metálicas o de madera según necesidad. Incluimos aislamiento térmico y acústico. Instalación rápida y limpia. Presupuesto sin cargo." },
-    { nombre: "Tablaroca (Drywall)", imagen: "Tablaroca.png", descripcion: "Cielos falsos, paredes, divisiones, fachadas, cornisas.", caracteristicas: ["Acabados de calidad", "Rápida instalación", "Diseños personalizados", "Cielos falsos", "Paredes divisorias", "Fachadas"], detalle: "Transforme sus espacios con drywall (tablaroca): instalación rápida, limpia y con acabados perfectos. Ideal para oficinas, hogares y locales comerciales. Realizamos cielos falsos con iluminación empotrada, paredes divisorias con aislamiento acústico, fachadas con placas antihumedad, y cornisas decorativas. Incorporamos aislamiento térmico y acústico (lana de vidrio o roca). Realizamos diseños curvos, arcos, nichos y formas especiales. Certificamos la resistencia al fuego según estándares internacionales (tablero tipo RF). Incluye masillado y pintura final." },
-    { nombre: "Glorietas, Pérgolas y Áreas de BBQ", imagen: "pergolasybarbacoa2.png", descripcion: "Transformamos tu exterior en un espacio único y funcional.", caracteristicas: ["Madera y estructura metálica", "Diseños modernos y rústicos", "Acabados premium", "Glorietas", "Pérgolas", "Áreas de barbacoa"], detalle: "Crea el jardín de tus sueños con estructuras de madera y metal. Diseñamos glorietas octagonales o rectangulares con techos de palma, teja o policarbonato. Pérgolas con sistemas de lamas orientables, toldos retráctiles e iluminación LED. Áreas de BBQ con encimeras de granito, parrillas de acero inoxidable, mesones, fregaderos y nevera incorporada. Trabajamos con maderas tratadas para exteriores (teca, cumarú, pino tropical) y acero galvanizado con pintura electrostática. Personalizamos el diseño según tus gustos. Incluye mobiliario complementario (bancas, mesas)." },
-    { nombre: "Vidriería (Ventanas y Puertas)", imagen: "Ventanasypuertas2.png", descripcion: "Ventanas, puertas corredizas, puertas para jardín y todo en vidrio.", caracteristicas: ["Diseños personalizados", "Acabados de alta calidad", "Instalación profesional", "Ventanas de vidrio", "Puertas corredizas"], detalle: "Ilumina y moderniza tu hogar con nuestras ventanas y puertas de vidrio de alta calidad. Ofrecemos vidrio templado, laminado, de control solar y doble acristalamiento (termopanel) para ahorro energético. Sistemas de apertura corrediza, abatible, oscilobatiente y plegable. Mejoramos la eficiencia energética y reducimos el ruido exterior. Instalamos herrajes de primera línea (perfiles de aluminio, PVC o madera). Realizamos mamparas para baño, ventanales panorámicos y cerramientos de terrazas. Incluye instalación profesional y limpieza." },
-    { nombre: "Diseño de Oficinas Modernas", imagen: "Oficinasmodernas2.png", descripcion: "Remodelamos y amueblamos tu oficina para inspirar productividad.", caracteristicas: ["Cielos falsos e iluminación LED", "Mobiliario corporativo", "Divisiones y recepciones", "Remodelación", "Acabados modernos", "Diseños elegantes, funcionales y profesionales"], detalle: "Oficinas que inspiran productividad. Realizamos diseño integral de espacios de trabajo: distribución optimizada, mobiliario corporativo de alta gama (escritorios, sillas ergonómicas, archivadores), cielos falsos con iluminación LED regulable, divisiones de vidrio o drywall, recepciones modernas. Incorporamos zonas de descanso (kitchenettes), salas de reuniones inteligentes con videoconferencia y cableado estructurado. Mejoramos la ventilación y la iluminación natural. Cumplimos con la normativa de accesibilidad y seguridad laboral. Incluye proyecto 3D, instalación eléctrica, red de datos y pintura." },
-    { nombre: "Encimeras de Lujo para Cocina y Pantry", imagen: "Cocina.png", descripcion: "Granito, cuarzo, piedra natural y sintetizada.", caracteristicas: ["Acabados premium", "Instalación profesional", "Durabilidad", "Slab de granito", "Cuarzo", "Piedra natural"], detalle: "Cocinas con encimeras de granito, cuarzo (marca Silestone, Ceasarstone), piedra natural (mármol, travertino) o superficies sinterizadas (Dekton, Neolith). Ofrecemos más de 100 colores y texturas, con acabados pulidos, apomazados o texturizados. Instalamos también backsplashes (salpicaderos) y barras de desayuno integradas. Sellamos las superficies para protegerlas de manchas y bacterias. Realizamos cortes exactos para fregaderos, hornos y placas de inducción. Incluye instalación profesional y retiro de residuos." },
-    { nombre: "Diseño de Interiores", imagen: "Diseñointeriores2.png", descripcion: "Espacios funcionales, elegantes y llenos de personalidad.", caracteristicas: ["Conceptos personalizados", "Selección de materiales", "Proyectos residenciales y comerciales", "Asesoría", "Decoración"], detalle: "Hacemos realidad el ambiente que siempre soñaste. Ofrecemos servicio integral de diseño de interiores: conceptualización, moodboards, renders 3D, planos de mobiliario, iluminación y selección de acabados. Te acompañamos en la compra de mobiliario, textiles, lámparas y accesorios decorativos. Optimizamos la distribución para aprovechar cada rincón. Integramos tecnología domótica (persianas, luces, audio) si lo deseas. Creamos ambientes para salas, comedores, dormitorios, y locales comerciales. Entregamos proyecto ejecutivo completo." },
-    { nombre: "Trabajos Metálicos (Puertas, Portones, Balcones)", imagen: "trabajosmétalicos2.png", descripcion: "Fabricamos e instalamos estructuras metálicas de alta resistencia.", caracteristicas: ["Trabajo profesional", "Alta resistencia", "Acabados de calidad", "Puertas metálicas", "Portones", "Balcones", "Servicio de soldadura en general"], detalle: "Seguridad y diseño con nuestras estructuras metálicas. Fabricamos e instalamos puertas metálicas (peatonales y de garaje), portones corredizos o abatibles, balcones para fachadas y terrazas, barandales, escaleras, marquesinas y estructuras para naves industriales. Trabajamos en acero inoxidable, hierro forjado, aluminio y acero al carbón. Aplicamos pintura electrostática, galvanizado o esmalte para mayor durabilidad. Realizamos trabajos de soldadura en general (MIG/TIG). Presupuestos sin compromiso. Ofrecemos servicio de mantenimiento y reparación de estructuras existentes." },
-    { nombre: "Instalación de Aire Acondicionado", imagen: "airec2.png", descripcion: "Confort, eficiencia y calidad. Marcas LG, Samsung, York, Panasonic, Gree.", caracteristicas: ["Enfriamiento rápido", "Ahorro de energía", "Funcionamiento silencioso", "Instalación en casas, oficinas, negocios", "LG", "Samsung"], detalle: "Climatización eficiente para su hogar o negocio. Instalamos equipos split, multisplit, sistemas de condensa por agua, minisplits inverter y sistemas centrales (VRF). Las mejores marcas del mercado: LG, Samsung, York, Panasonic, Gree. Realizamos cálculo de carga térmica (BTU/h necesarios) y recomendamos el equipo ideal según el tamaño del ambiente, cantidad de personas y orientación. Ofrecemos mantenimiento preventivo (limpieza de filtros, recarga de gas refrigerante) y correctivo (reparación de tableros, compresores). Instalación eléctrica y desagüe incluidos. Incluye tubería de cobre aislada, drenaje y soportes." },
-    { nombre: "Pintura Profesional", imagen: "pinturaprofesional.png", descripcion: "Damos vida, color y protección a tus espacios.", caracteristicas: ["Protección y durabilidad", "Acabados de alta calidad", "Colores que inspiran", "Pintura de casas, oficinas, clínicas", "Reparación de paredes"], detalle: "Más que pintura, creamos ambientes que inspiran. Realizamos pintura interior y exterior con acabados impecables. Utilizamos pinturas ecológicas de bajo olor y alta resistencia al lavado. Incluye reparación de paredes, resanes, masillado de grietas, lijado y preparación de superficies. Realizamos texturas (estuco, gotelé, liso), efectos decorativos (esponjado, trapo, lustre) y murales personalizados. Aseguramos muebles y pisos durante el trabajo. Servicio rápido y limpio. Presupuesto por metro cuadrado sin compromiso." },
-    { nombre: "Soluciones Eléctricas", imagen: "electricos3.png", descripcion: "Instalaciones completas, reparaciones, cableado residencial y comercial.", caracteristicas: ["Servicio rápido y seguro", "Técnicos calificados", "Trabajo garantizado", "Instalaciones completas", "Tableros eléctricos"], detalle: "Electricidad segura y eficiente para su hogar o negocio. Técnicos certificados realizan estudios de carga, instalación de tableros eléctricos (distribución, breakers, protecciones), puesta a tierra, certificación eléctrica, y reparación de cortocircuitos. Realizamos cableado residencial y comercial, instalación de luminarias, tomacorrientes, interruptores, sistemas de iluminación LED, fotoceldas y temporizadores. Trabajamos con materiales de primeras marcas (Indeco, General Electric, Schneider). Ofrecemos servicio de emergencia 24/7. Incluye diagnóstico sin costo." },
-    { nombre: "Soluciones Hidráulicas", imagen: "hidraulicas2.png", descripcion: "Instalación, mantenimiento, perforación de pozos, limpieza de cisternas.", caracteristicas: ["Trabajo profesional", "Materiales de alta calidad", "Perforación de pozos", "Limpieza de cisternas", "Sistemas pluviales"], detalle: "Agua segura y abundante. Realizamos instalaciones hidráulicas completas (tuberías de agua fría y caliente, sistemas de presión, calentadores solares). Perforación de pozos profundos hasta 150 metros, con estudio de veta y análisis de agua. Limpieza y desinfección de cisternas y tanques elevados. Elaboración de cisternas tipo cajón de concreto armado (capacidades desde 10,000 hasta 100,000 litros). Sistemas de drenaje pluvial y sanitario, con conexión a red municipal o pozo absorbente. Incluye detección de fugas con cámara térmica, reparación de tuberías sin romper (manga termorretráctil) y sistemas de bombeo eficientes." },
-    { nombre: "Maquinaria y Transporte", imagen: "Maquinariaytransp.png", descripcion: "Movimiento de tierra, transporte de material, alquiler de maquinaria.", caracteristicas: ["Experiencia y eficiencia", "Compromiso", "Cobertura desde Ahuachapán hasta Oriente", "Movimiento de tierra", "Alquiler de maquinaria"], detalle: "Logística y maquinaria para su proyecto. Contamos con retroexcavadoras, excavadoras hidráulicas, bulldozers, motoniveladoras, cargadores frontales, volquetes (dump trucks) y camiones de volteo. Realizamos movimiento de tierra (excavación, relleno, nivelación), transporte de materiales (arena, grava, tierra, escombros), y alquiler de maquinaria por hora, día o mes. Personal operador calificado y con experiencia. Cobertura desde Ahuachapán hasta La Unión (Oriente). Servicio de consultoría para cálculo de volúmenes de tierra y logística. Presupuesto en 24 horas. Facturación legal." },
-    { nombre: "Bienes Raíces", imagen: "raices.png", descripcion: "Compra y venta de propiedades, diseño de parcelaciones, desarrollo inmobiliario.", caracteristicas: ["Inversiones seguras", "Asesoría personalizada", "Propiedades disponibles", "Casas, terrenos, apartamentos, fincas"], detalle: "Su inversión segura. Encuentre la propiedad ideal con nuestro respaldo. Ofrecemos compra y venta de casas, terrenos, apartamentos, fincas y locales comerciales en todo El Salvador. Realizamos avalúos comerciales certificados, estudios de mercado, tramitación de créditos hipotecarios y acompañamiento legal completo (contratos, escrituración, registro). También diseñamos parcelaciones (división de terrenos, urbanización con servicios) y desarrollos inmobiliarios (proyectos habitacionales o comerciales llave en mano). Cartera de propiedades exclusivas. Asesoría personalizada para inversionistas nacionales e internacionales." },
-    { nombre: "Proyectos Agrícolas", imagen: "agricola2.png", descripcion: "Sistemas de riego, asesoría en cultivos, casas mayas, ganadería.", caracteristicas: ["Ingeniería agronómica", "Sostenibilidad", "Sistemas de riego", "Asesoría en cultivos", "Casas mayas"], detalle: "Aumente su producción agrícola con tecnología y asesoría especializada. Diseñamos e instalamos sistemas de riego por goteo, aspersión y microaspersión para cultivos de café, caña, hortalizas, frutales y pastos. Realizamos análisis de suelo (pH, nutrientes, textura), recomendación de fertilización, control de plagas y manejo integrado de cultivos. Construimos casas mayas (estructuras de madera y plástico para viveros o protección de cultivos). Asesoría en ganadería sostenible (pastos mejorados, manejo de praderas, sistemas silvopastoriles). Incluye capacitación a agricultores." },
-    { nombre: "Gamer Room", imagen: "gamer.png", descripcion: "Creamos tu cuarto gamer desde cero con diseño moderno y funcional.", caracteristicas: ["Diseño 3D personalizado", "Iluminación LED RGB", "Muebles a medida", "Paredes decorativas"], detalle: "El espacio gamer que siempre quisiste. Realizamos diseño 3D personalizado de tu habitación o rincón gamer, incluyendo distribución de equipos, mobiliario a medida (mesas en L, estanterías, soportes para torre), iluminación LED RGB sincronizable con el equipo (tiras, paneles, teclado, mouse), paredes decorativas con paneles acústicos y vinilos de tus juegos favoritos. Incorporamos sistemas de gestión de cables ocultos, sonido envolvente 5.1 o 7.1, sillas ergonómicas y climatización. Instalamos cortinas blackout para evitar reflejos." },
-    { nombre: "Cámaras de Vigilancia para Vivienda", imagen: "Camaras2.jpeg", descripcion: "Seguridad inteligente para tu hogar y tranquilidad para tu familia.", caracteristicas: ["Protege lo que más importa", "Vigila tu hogar en HD", "Instalación profesional", "Cámaras de vigilancia"], detalle: "Vigile su hogar desde su celular con sistemas de seguridad profesional. Ofrecemos cámaras IP con resolución 4K, visión nocturna, detección de movimiento, audio bidireccional, y almacenamiento en la nube o en NVR (grabador de red). Instalamos sistemas desde 2 hasta 32 cámaras, con monitoreo remoto 24/7 desde su smartphone o computadora. Incluye alarmas con sensores de movimiento, contacto magnético para puertas/ventanas, y sirenas. Personal capacitado realiza tendido de cableado, configuración de red y aplicación móvil. Aseguramos la privacidad y protección de datos. Contratos de mantenimiento preventivo disponibles." }
+    { nombre: "Diseño y Construcción de Piscinas", imagen: "Piscina2.png", descripcion: "Piscinas residenciales modernas, remodelación y paisajismo.", caracteristicas: ["Diseños modernos y elegantes", "Acabados de alta calidad", "Trabajo profesional garantizado"], detalle: "Creamos la piscina de tus sueños con acabados premium y diseño personalizado." },
+    { nombre: "Instalación de Pisos", imagen: "renovarpisos2.png", descripcion: "Piso tipo madera, cerámico, porcelanato 60x60 y más medidas.", caracteristicas: ["Acabados de alta calidad", "Instalación profesional", "Diseños modernos"], detalle: "Renovamos sus pisos con materiales de primera calidad y mano de obra experta." },
+    { nombre: "Renovación de Techos", imagen: "renovartechos.png", descripcion: "Instalamos y renovamos lámina, teja, arquiteja, shingles americanos.", caracteristicas: ["Trabajo profesional", "Materiales de alta calidad", "Instalación garantizada"], detalle: "Proteja su hogar con techos resistentes y modernos." },
+    { nombre: "Tablaroca (Drywall)", imagen: "tablaroca.png", descripcion: "Cielos falsos, paredes, divisiones, fachadas, cornisas.", caracteristicas: ["Acabados de calidad", "Rápida instalación", "Diseños personalizados"], detalle: "Transforme sus espacios con drywall: instalación rápida, limpia y con acabados perfectos." },
+    { nombre: "Glorietas, Pérgolas y Áreas de BBQ", imagen: "pergolasybarbacoa2.png", descripcion: "Transformamos tu exterior en un espacio único y funcional.", caracteristicas: ["Madera y estructura metálica", "Diseños modernos y rústicos", "Acabados premium"], detalle: "Crea el jardín de tus sueños con estructuras de madera y metal." },
+    { nombre: "Vidriería (Ventanas y Puertas)", imagen: "Ventanasypuertas2.png", descripcion: "Ventanas, puertas corredizas, puertas para jardín y todo en vidrio.", caracteristicas: ["Diseños personalizados", "Acabados de alta calidad", "Instalación profesional"], detalle: "Ilumina y moderniza tu hogar con nuestras ventanas y puertas de vidrio." },
+    { nombre: "Diseño de Oficinas Modernas", imagen: "Oficinasmodernas2.png", descripcion: "Remodelamos y amueblamos tu oficina para inspirar productividad.", caracteristicas: ["Cielos falsos e iluminación LED", "Mobiliario corporativo", "Divisiones y recepciones"], detalle: "Oficinas que inspiran productividad. Diseño integral de espacios de trabajo." },
+    { nombre: "Encimeras de Lujo para Cocina", imagen: "Cocina.png", descripcion: "Granito, cuarzo, piedra natural y sintetizada.", caracteristicas: ["Acabados premium", "Instalación profesional", "Durabilidad"], detalle: "Cocinas con encimeras de granito, cuarzo y piedra natural." },
+    { nombre: "Diseño de Interiores", imagen: "Diseñointeriores2.png", descripcion: "Espacios funcionales, elegantes y llenos de personalidad.", caracteristicas: ["Conceptos personalizados", "Selección de materiales", "Proyectos residenciales y comerciales"], detalle: "Hacemos realidad el ambiente que siempre soñaste." },
+    { nombre: "Instalación de Aire Acondicionado", imagen: "airec2.png", descripcion: "Confort, eficiencia y calidad. Marcas LG, Samsung, York.", caracteristicas: ["Enfriamiento rápido", "Ahorro de energía", "Funcionamiento silencioso"], detalle: "Climatización eficiente para su hogar o negocio." },
+    { nombre: "Pintura Profesional", imagen: "pinturaprofesional.png", descripcion: "Damos vida, color y protección a tus espacios.", caracteristicas: ["Protección y durabilidad", "Acabados de alta calidad", "Colores que inspiran"], detalle: "Más que pintura, creamos ambientes que inspiran." },
+    { nombre: "Soluciones Eléctricas", imagen: "electricos3.png", descripcion: "Instalaciones completas, reparaciones, cableado residencial y comercial.", caracteristicas: ["Servicio rápido y seguro", "Técnicos calificados", "Trabajo garantizado"], detalle: "Electricidad segura y eficiente para su hogar o negocio." },
+    { nombre: "Bienes Raíces", imagen: "raices.png", descripcion: "Compra y venta de propiedades, desarrollo inmobiliario.", caracteristicas: ["Inversiones seguras", "Asesoría personalizada", "Propiedades disponibles"], detalle: "Su inversión segura. Encuentre la propiedad ideal con nuestro respaldo." },
+    { nombre: "Gamer Room", imagen: "gamer.png", descripcion: "Creamos tu cuarto gamer desde cero.", caracteristicas: ["Diseño 3D personalizado", "Iluminación LED RGB", "Muebles a medida"], detalle: "El espacio gamer que siempre quisiste." },
+    { nombre: "Cámaras de Vigilancia", imagen: "Camaras2.jpeg", descripcion: "Seguridad inteligente para tu hogar.", caracteristicas: ["Protege lo que más importa", "Vigila tu hogar en HD", "Instalación profesional"], detalle: "Vigile su hogar desde su celular con sistemas de seguridad profesional." }
   ];
 
-  // ----- INGLÉS (traducción completa) -----
-<!DOCTYPE html>
-<html class="light" lang="es">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>Cali Constructora y Desarrolladora Inmobiliaria</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "secondary-fixed-dim": "#e9c349",
-              "surface-bright": "#f8f9fa",
-              "outline": "#74777f",
-              "inverse-surface": "#2e3132",
-              "on-error": "#ffffff",
-              "inverse-on-surface": "#f0f1f2",
-              "surface-container-high": "#e7e8e9",
-              "primary": "#000613",
-              "error-container": "#ffdad6",
-              "outline-variant": "#c4c6cf",
-              "gold-gradient-end": "#F9E29C",
-              "tertiary-container": "#331700",
-              "surface-tint": "#476083",
-              "on-primary-container": "#6f88ad",
-              "on-tertiary-container": "#cb6e00",
-              "whatsapp-green": "#25D366",
-              "primary-fixed": "#d4e3ff",
-              "on-surface": "#191c1d",
-              "slate-gray": "#333333",
-              "surface": "#f8f9fa",
-              "surface-container-lowest": "#ffffff",
-              "on-surface-variant": "#43474e",
-              "on-primary": "#ffffff",
-              "surface-variant": "#e1e3e4",
-              "surface-container": "#edeeef",
-              "on-tertiary": "#ffffff",
-              "secondary": "#735c00",
-              "primary-container": "#001f3f",
-              "on-error-container": "#93000a",
-              "inverse-primary": "#afc8f0",
-              "gold-gradient-start": "#D4AF37",
-              "on-secondary-fixed-variant": "#574500",
-              "tertiary-fixed": "#ffdcc3",
-              "on-primary-fixed-variant": "#2f486a",
-              "background": "#f8f9fa",
-              "on-tertiary-fixed": "#2f1500",
-              "tertiary-fixed-dim": "#ffb77d",
-              "on-tertiary-fixed-variant": "#6e3900",
-              "on-background": "#191c1d",
-              "surface-container-highest": "#e1e3e4",
-              "tertiary": "#0c0300",
-              "secondary-container": "#fed65b",
-              "primary-fixed-dim": "#afc8f0",
-              "on-secondary-container": "#745c00",
-              "status-blue": "#0056b3",
-              "error": "#ba1a1a",
-              "surface-dim": "#d9dadb",
-              "on-secondary-fixed": "#241a00",
-              "secondary-fixed": "#ffe088",
-              "on-secondary": "#ffffff",
-              "surface-container-low": "#f3f4f5",
-              "on-primary-fixed": "#001c3a"
-            },
-            borderRadius: {
-              DEFAULT: "0.125rem",
-              lg: "0.25rem",
-              xl: "0.5rem",
-              full: "0.75rem"
-            },
-            spacing: {
-              "section-padding": "80px",
-              gutter: "24px",
-              "stack-gap": "16px",
-              "container-max": "1200px",
-              "margin-mobile": "16px"
-            },
-            fontFamily: {
-              "headline-lg-mobile": ["Montserrat"],
-              "label-sm": ["Montserrat"],
-              "display-lg": ["Montserrat"],
-              "label-bold": ["Montserrat"],
-              "body-lg": ["Montserrat"],
-              "headline-md": ["Montserrat"],
-              "headline-lg": ["Montserrat"],
-              "body-md": ["Montserrat"]
-            },
-            fontSize: {
-              "headline-lg-mobile": ["28px", { lineHeight: "1.2", fontWeight: "700" }],
-              "label-sm": ["12px", { lineHeight: "1.2", fontWeight: "500" }],
-              "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
-              "label-bold": ["14px", { lineHeight: "1.2", letterSpacing: "0.05em", fontWeight: "700" }],
-              "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }],
-              "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "700" }],
-              "headline-lg": ["32px", { lineHeight: "1.2", fontWeight: "700" }],
-              "body-md": ["16px", { lineHeight: "1.5", fontWeight: "400" }]
-            }
-          }
-        }
-      }
-    </script>
-<style>
-      .shadow-architectural { box-shadow: 0 4px 20px -2px rgba(0, 6, 19, 0.08); }
-      .break-email { word-break: break-all; overflow-wrap: break-word; font-size: 0.9rem; }
-      @media (max-width: 768px) { .break-email { font-size: 0.75rem; } }
-      #languageSelect { background-color: #000613; color: white; border-color: rgba(255,255,255,0.4); }
-      #languageSelect option { background-color: #000613; color: white; }
-      .modal-backdrop { transition: opacity 0.3s ease; }
-      .modal-container { transition: transform 0.3s ease, opacity 0.3s ease; transform: scale(0.95); }
-      .modal-container.active { transform: scale(1); }
-      body.modal-open { overflow: hidden; }
-      .chatbot-btn { animation: float 3s ease-in-out infinite; }
-      .chat-window { transition: all 0.3s ease; transform: scale(0.95); opacity: 0; visibility: hidden; transform-origin: bottom right; }
-      .chat-window.open { transform: scale(1); opacity: 1; visibility: visible; }
-      @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
-      @keyframes fadeSlideUp{0%{opacity:0;transform:translateY(40px);}100%{opacity:1;transform:translateY(0);}}
-      @keyframes fadeIn{0%{opacity:0;}100%{opacity:1;}}
-      @keyframes slideInLeft{0%{opacity:0;transform:translateX(-50px);}100%{opacity:1;transform:translateX(0);}}
-      @keyframes slideInRight{0%{opacity:0;transform:translateX(50px);}100%{opacity:1;transform:translateX(0);}}
-      @keyframes scaleIn{0%{opacity:0;transform:scale(0.85);}100%{opacity:1;transform:scale(1);}}
-      @keyframes shimmer{0%{background-position:-200% center;}100%{background-position:200% center;}}
-      @keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0.4);}50%{box-shadow:0 0 0 10px rgba(212,175,55,0);}}
-      @keyframes expandBar{from{width:0;}to{width:5rem;}}
-      .anim-fade-up,.anim-fade-in,.anim-slide-left,.anim-slide-right,.anim-scale-in{opacity:0;}
-      .anim-fade-up.is-visible{animation:fadeSlideUp 0.7s ease forwards;}
-      .anim-fade-in.is-visible{animation:fadeIn 0.7s ease forwards;}
-      .anim-slide-left.is-visible{animation:slideInLeft 0.7s ease forwards;}
-      .anim-slide-right.is-visible{animation:slideInRight 0.7s ease forwards;}
-      .anim-scale-in.is-visible{animation:scaleIn 0.6s ease forwards;}
-      .delay-100{animation-delay:0.1s!important;}.delay-200{animation-delay:0.2s!important;}.delay-300{animation-delay:0.3s!important;}.delay-400{animation-delay:0.4s!important;}.delay-500{animation-delay:0.5s!important;}
-      .hero-title-animate{animation:fadeSlideUp 0.9s ease 0.2s both;}
-      .hero-subtitle-animate{animation:fadeSlideUp 0.9s ease 0.5s both;}
-      .hero-btns-animate{animation:fadeSlideUp 0.9s ease 0.8s both;}
-      .hero-gold-shimmer{background:linear-gradient(90deg,#D4AF37 0%,#F9E29C 40%,#D4AF37 60%,#F9E29C 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;}
-      .join-badge-pulse{animation:badgePulse 2.5s ease-in-out infinite;display:inline-block;border-radius:999px;padding:2px 10px;}
-      #servicios-container>div{transition:transform 0.35s cubic-bezier(.22,.68,0,1.2),box-shadow 0.35s ease!important;}
-      #servicios-container>div:hover{transform:translateY(-8px) scale(1.01)!important;box-shadow:0 16px 40px -8px rgba(0,6,19,0.18)!important;}
-      #servicios-container>div img{transition:transform 0.5s ease;transform-origin:center;}
-      #servicios-container>div:hover img{transform:scale(1.06);}
-      .services-bar.is-visible{animation:expandBar 0.8s ease 0.3s forwards;}
-      .why-icon{transition:transform 0.3s ease;}.why-icon:hover{transform:rotate(10deg) scale(1.1);}
-      footer a{transition:transform 0.25s ease,color 0.25s ease;display:inline-block;}
-      footer a:hover{transform:translateY(-4px) scale(1.15);}
-      .about-img-wrap{transition:transform 0.4s ease,box-shadow 0.4s ease;}
-      .about-img-wrap:hover{transform:scale(1.02);box-shadow:0 24px 60px rgba(0,6,19,0.2);}
-      .desktop-only { display: flex; }
-      .mobile-only { display: none; }
-      @media (max-width: 768px) {
-        .desktop-only { display: none; }
-      }
-    </style>
-</head>
-<body class="bg-background text-on-background font-body-md selection:bg-secondary-fixed selection:text-on-secondary-fixed overflow-x-hidden">
-
-<nav class="bg-primary sticky top-0 z-50 shadow-md border-b border-outline-variant/20 py-3">
-  <div class="flex justify-between items-center w-full px-4 md:px-section-padding max-w-container-max mx-auto">
-    <div class="flex items-center gap-3">
-      <img alt="Logo Cali" class="h-12 w-auto object-contain" src="logo1.png" onerror="this.src='https://placehold.co/60x60/000613/ffffff?text=Logo'"/>
-      <div class="flex flex-col">
-        <span id="brandSubtitle" class="text-[8px] md:text-[10px] text-white/70 tracking-widest uppercase font-bold">Constructora y Desarrolladora Inmobiliaria</span>
-      </div>
-    </div>
-    <div class="desktop-only items-center gap-6">
-      <div class="flex flex-col text-right">
-        <div class="flex gap-3">
-          <a class="text-secondary-fixed font-bold text-sm tracking-tighter" href="tel:+50372179293">+503 7217-9293</a>
-          <a class="text-secondary-fixed font-bold text-sm tracking-tighter" href="tel:+50379207435">+503 7920-7435</a>
-        </div>
-        <a class="text-white text-xs tracking-tighter" href="tel:+134661024296">USA +1 346 610 24296</a>
-      </div>
-      <select id="languageSelect" class="border border-white/40 rounded-full text-white text-sm py-2 px-4 focus:outline-none cursor-pointer hover:bg-white/10 transition">
-        <option value="es" selected>🇪🇸 Español</option>
-        <option value="en">🇺🇸 English</option>
-      </select>
-    </div>
-    <button class="md:hidden text-white" onclick="toggleDrawer()"><span class="material-symbols-outlined text-3xl">menu</span></button>
-  </div>
-</nav>
-
-<div class="h-screen w-80 fixed left-0 top-0 z-[60] bg-surface shadow-xl flex flex-col py-6 -translate-x-full transition-transform duration-300 ease-in-out md:hidden" id="drawer">
-  <div class="px-6 pb-6 flex justify-between items-center border-b border-outline-variant/20">
-    <span class="font-headline-lg text-primary">Cali Inmobiliaria</span>
-    <button onclick="toggleDrawer()" class="p-2 rounded-full hover:bg-surface-variant"><span class="material-symbols-outlined">close</span></button>
-  </div>
-  <div class="flex flex-col gap-3 pt-6 px-4">
-    <a class="bg-secondary-container text-on-secondary-container rounded-full flex items-center gap-4 px-5 py-3 font-label-bold text-label-bold" href="#" onclick="toggleDrawer()"><span class="material-symbols-outlined">home</span> <span data-i18n="nav-home">Inicio</span></a>
-    <a class="text-on-surface-variant hover:bg-surface-variant rounded-full flex items-center gap-4 px-5 py-3 font-label-bold text-label-bold" href="#servicios" onclick="toggleDrawer()"><span class="material-symbols-outlined">foundation</span> <span data-i18n="nav-services">Servicios</span></a>
-    <a class="text-on-surface-variant hover:bg-surface-variant rounded-full flex items-center gap-4 px-5 py-3 font-label-bold text-label-bold" href="#contacto" onclick="toggleDrawer()"><span class="material-symbols-outlined">mail</span> <span data-i18n="nav-contact">Contacto</span></a>
-    <div class="mt-4 pt-4 border-t border-outline-variant/20">
-      <select id="mobileLanguageSelect" class="w-full border border-primary/30 rounded-full text-primary text-sm py-2 px-4 focus:outline-none cursor-pointer">
-        <option value="es" selected>🇪🇸 Español</option>
-        <option value="en">🇺🇸 English</option>
-      </select>
-    </div>
-    <div class="mt-4 pt-4 border-t border-outline-variant/20 text-center">
-      <p class="text-xs text-on-surface-variant">+503 7217-9293<br>+503 7920-7435<br>+1 346 610 24296</p>
-    </div>
-  </div>
-</div>
-<div class="fixed inset-0 bg-black/50 z-50 hidden transition-opacity duration-300" id="overlay" onclick="toggleDrawer()"></div>
-
-<header class="relative min-h-[90vh] flex items-center overflow-hidden">
-  <div class="absolute inset-0 bg-primary/60 z-10"></div>
-  <div class="absolute inset-0 z-0"><img alt="Construcción de lujo" class="w-full h-full object-cover" src="mainfoto3.png" onerror="this.src='https://placehold.co/1920x1080/1a1a2e/ffffff?text=Construccion+de+Lujo'"/></div>
-  <div class="relative z-20 max-w-container-max mx-auto px-4 md:px-section-padding w-full">
-    <div class="max-w-2xl text-white">
-      <h1 class="font-display-lg text-headline-lg-mobile md:text-display-lg mb-6 leading-tight hero-title-animate"><span data-i18n="hero-title1">Construimos tus sueños,</span> <span class="hero-gold-shimmer" data-i18n="hero-title2">construimos tu hogar.</span></h1>
-      <p class="font-body-lg text-body-lg mb-10 text-white/90 hero-subtitle-animate" data-i18n="hero-subtitle">Diseño, construcción y remodelación con calidad, confianza y compromiso en El Salvador, USA y Canadá.</p>
-      <div class="flex flex-col sm:flex-row gap-4 hero-btns-animate">
-        <a class="bg-whatsapp-green text-white px-8 py-4 rounded-full font-label-bold text-label-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg" href="https://wa.me/50379539980"><span class="material-symbols-outlined">message</span> <span data-i18n="hero-contact-btn">Contáctanos</span></a>
-        <a class="border-2 border-white text-white px-8 py-4 rounded-full font-label-bold text-label-bold flex items-center justify-center hover:bg-white hover:text-primary transition-all" href="#servicios"><span data-i18n="hero-services-btn">Nuestros Servicios</span></a>
-      </div>
-    </div>
-  </div>
-</header>
-
-<section class="py-section-padding px-4 md:px-section-padding max-w-container-max mx-auto grid md:grid-cols-2 gap-16 items-center">
-  <div class="anim-slide-left">
-    <span class="text-secondary font-label-bold tracking-[0.2em] mb-4 block" data-i18n="about-badge">SOBRE NOSOTROS</span>
-    <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-6" data-i18n="about-title">Expertos en Desarrollo Inmobiliario Transnacional</h2>
-    <p class="text-body-lg text-on-surface-variant mb-8 leading-relaxed" data-i18n="about-desc">Con una sólida presencia en <strong>El Salvador, Estados Unidos, Canadá y toda Centroamérica</strong>, en Cali Constructora nos especializamos en transformar visiones en realidades estructurales.</p>
-    <div class="p-6 bg-surface-container border-l-4 border-secondary-fixed anim-fade-up delay-300"><p class="italic text-primary font-medium text-lg" data-i18n="about-quote">"Construimos más que casas, construimos sueños y futuros."</p></div>
-  </div>
-  <div class="relative anim-slide-right">
-    <div class="aspect-square bg-slate-gray relative overflow-hidden rounded-lg shadow-architectural about-img-wrap"><img class="w-full h-full object-cover" src="extra1.png" onerror="this.src='https://placehold.co/800x800/2c3e50/ffffff?text=Equipo+Profesional'"/></div>
-    <div class="absolute -bottom-8 -left-8 bg-primary p-8 rounded-lg shadow-xl hidden md:block"><span class="text-secondary-fixed text-4xl font-bold block">+15 Años</span><span class="text-white text-sm font-label-bold" data-i18n="about-exp-label">DE EXPERIENCIA</span></div>
-  </div>
-</section>
-
-<section class="py-section-padding bg-surface-container-low" id="servicios">
-  <div class="max-w-container-max mx-auto px-4 md:px-section-padding">
-    <div class="text-center mb-12 anim-fade-up">
-      <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-4" data-i18n="services-title">Servicios Profesionales</h2>
-      <div class="services-bar w-20 h-1 bg-secondary mx-auto"></div>
-      <p class="text-on-surface-variant mt-4" data-i18n="services-subtitle">Más de 20 especialidades para transformar tus espacios</p>
-    </div>
-    <div class="mb-10 flex justify-center">
-      <div class="relative w-full max-w-md">
-        <span class="absolute inset-y-0 left-3 flex items-center text-outline"><span class="material-symbols-outlined">search</span></span>
-        <input type="text" id="searchInput" placeholder="Buscar servicio (ej: piscina, techo, gamer...)" class="w-full pl-10 pr-4 py-3 rounded-full border border-outline-variant focus:ring-2 focus:ring-secondary focus:border-transparent bg-white shadow-sm" data-i18n-placeholder="search-placeholder">
-      </div>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="servicios-container"></div>
-    <div id="no-results" class="text-center text-on-surface-variant py-12 hidden" data-i18n="no-results">No se encontraron servicios. Prueba con otra palabra.</div>
-  </div>
-</section>
-
-<section class="py-section-padding bg-primary text-white overflow-hidden">
-  <div class="max-w-container-max mx-auto px-4 md:px-section-padding grid md:grid-cols-2 gap-16 items-center">
-    <div class="relative order-2 md:order-1"><div class="grid grid-cols-2 gap-4"><div class="space-y-4"><div class="h-64 rounded-lg overflow-hidden shadow-2xl"><img class="w-full h-full object-cover" src="pergolasybarcoa.png" onerror="this.src='https://placehold.co/600x800/1a1a2e/ffffff?text=Acabados+Premium'"/></div><div class="h-40 rounded-lg overflow-hidden shadow-2xl"><img class="w-full h-full object-cover" src="agricola.png" onerror="this.src='https://placehold.co/600x400/1a1a2e/ffffff?text=Pisos+de+Lujo'"/></div></div><div class="space-y-4 pt-8"><div class="h-40 rounded-lg overflow-hidden shadow-2xl"><img class="w-full h-full object-cover" src="Piscina.png" onerror="this.src='https://placehold.co/600x400/1a1a2e/ffffff?text=Piscinas'"/></div><div class="h-64 rounded-lg overflow-hidden shadow-2xl"><img class="w-full h-full object-cover" src="Ventanasypuertas.png" onerror="this.src='https://placehold.co/600x800/1a1a2e/ffffff?text=Vidriería'"/></div></div></div></div>
-    <div class="order-1 md:order-2">
-      <h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-8" data-i18n="why-title">Por qué somos su mejor elección</h2>
-      <div class="space-y-6">
-        <div class="flex gap-4 items-start anim-fade-up delay-100"><div class="bg-secondary-fixed p-2 rounded-full text-primary shrink-0 why-icon"><span class="material-symbols-outlined">check</span></div><div><h4 class="font-bold text-lg text-secondary-fixed" data-i18n="why-point1-title">Acabados de Lujo</h4><p class="text-white/70" data-i18n="why-point1-desc">Materiales premium y mano de obra experta en cada detalle.</p></div></div>
-        <div class="flex gap-4 items-start anim-fade-up delay-200"><div class="bg-secondary-fixed p-2 rounded-full text-primary shrink-0 why-icon"><span class="material-symbols-outlined">verified</span></div><div><h4 class="font-bold text-lg text-secondary-fixed" data-i18n="why-point2-title">Instalación Profesional</h4><p class="text-white/70" data-i18n="why-point2-desc">Equipo técnico capacitado con estándares internacionales.</p></div></div>
-        <div class="flex gap-4 items-start anim-fade-up delay-300"><div class="bg-secondary-fixed p-2 rounded-full text-primary shrink-0 why-icon"><span class="material-symbols-outlined">public</span></div><div><h4 class="font-bold text-lg text-secondary-fixed" data-i18n="why-point3-title">Cobertura Total</h4><p class="text-white/70" data-i18n="why-point3-desc">Operaciones en El Salvador, USA y Canadá con un solo interlocutor.</p></div></div>
-        <div class="flex gap-4 items-start anim-fade-up delay-400"><div class="bg-secondary-fixed p-2 rounded-full text-primary shrink-0 why-icon"><span class="material-symbols-outlined">gavel</span></div><div><h4 class="font-bold text-lg text-secondary-fixed" data-i18n="why-point4-title">Contratos Jurídicos</h4><p class="text-white/70" data-i18n="why-point4-desc">Garantía legal y seguridad para su inversión.</p></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="relative py-24 flex items-center overflow-hidden">
-  <div class="absolute inset-0 bg-primary/80 z-10"></div>
-  <div class="absolute inset-0 z-0"><img class="w-full h-full object-cover" src="extra1.png" onerror="this.src='https://placehold.co/1920x1080/1a1a2e/ffffff?text=Únete+a+nuestro+equipo'"/></div>
-  <div class="relative z-20 max-w-container-max mx-auto px-4 md:px-section-padding text-center w-full">
-    <h2 class="text-secondary-fixed font-label-bold mb-4 anim-fade-up join-badge-pulse" data-i18n="join-badge">ÚNETE A NUESTRO EQUIPO</h2>
-    <h3 class="font-display-lg text-headline-lg-mobile md:text-headline-lg text-white mb-8 anim-fade-up delay-200" data-i18n="join-title">Asesores de Bienes Raíces y Construcción</h3>
-    <p class="text-white/80 max-w-2xl mx-auto mb-10 text-body-lg anim-fade-up delay-300" data-i18n="join-desc">Buscamos profesionales comprometidos para liderar el mercado inmobiliario en la región. Forma parte de la constructora con mayor proyección.</p>
-    <div class="flex justify-center gap-8 text-white/60">
-      <div class="flex flex-col items-center anim-scale-in delay-100"><span class="material-symbols-outlined text-4xl mb-2 text-secondary-fixed">groups</span><span class="text-xs font-bold" data-i18n="join-feature1">Colaboración</span></div>
-      <div class="flex flex-col items-center anim-scale-in delay-300"><span class="material-symbols-outlined text-4xl mb-2 text-secondary-fixed">trending_up</span><span class="text-xs font-bold" data-i18n="join-feature2">Crecimiento</span></div>
-      <div class="flex flex-col items-center anim-scale-in delay-500"><span class="material-symbols-outlined text-4xl mb-2 text-secondary-fixed">handshake</span><span class="text-xs font-bold" data-i18n="join-feature3">Ética</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="py-section-padding px-4 md:px-section-padding max-w-container-max mx-auto" id="contacto">
-  <div class="bg-white rounded-xl shadow-architectural border border-outline-variant/20 overflow-hidden flex flex-col md:flex-row anim-fade-up">
-    <div class="bg-primary p-8 md:p-12 text-white md:w-1/3">
-      <h2 class="font-headline-lg mb-6" data-i18n="contact-title">Iniciemos su proyecto hoy</h2>
-      <div class="space-y-5">
-        <div class="flex items-center gap-4"><span class="material-symbols-outlined text-secondary-fixed">phone_iphone</span><div><p class="text-xs text-white/50" data-i18n="contact-sv-label1">El Salvador</p><p class="font-bold text-sm md:text-base">+503 7217-9293</p><p class="font-bold text-sm md:text-base">+503 7920-7435</p></div></div>
-        <div class="flex items-center gap-4"><span class="material-symbols-outlined text-secondary-fixed">phone_iphone</span><div><p class="text-xs text-white/50" data-i18n="contact-usa-label">United States</p><p class="font-bold text-sm md:text-base">+1 346 610 24296</p></div></div>
-        <div class="flex items-center gap-4"><span class="material-symbols-outlined text-secondary-fixed">mail</span><div><p class="text-xs text-white/50" data-i18n="contact-email-label">Email</p><p class="font-bold break-email text-sm md:text-base">iarq.home.solutions.sv@gmail.com</p></div></div>
-      </div>
-    </div>
-    <div class="p-8 md:p-12 md:w-2/3">
-      <form id="contactForm" class="space-y-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5"><div class="space-y-1"><label class="font-label-bold text-primary" data-i18n="form-name">Nombre Completo</label><input id="contactName" name="nombre" class="w-full border-0 border-b border-outline-variant focus:ring-0 focus:border-primary transition-all p-2" placeholder="Juan Pérez" type="text" required/></div><div class="space-y-1"><label class="font-label-bold text-primary" data-i18n="form-phone">Teléfono</label><input id="contactPhone" name="telefono" class="w-full border-0 border-b border-outline-variant focus:ring-0 focus:border-primary transition-all p-2" placeholder="+503 0000-0000" type="tel" required/></div></div>
-        <div class="space-y-1"><label class="font-label-bold text-primary" data-i18n="form-service">Tipo de Servicio</label><select id="servicioSelect" name="servicio" class="w-full border-0 border-b border-outline-variant focus:ring-0 focus:border-primary transition-all p-2 bg-transparent" required></select></div>
-        <div class="space-y-1"><label class="font-label-bold text-primary" data-i18n="form-message">Mensaje</label><textarea id="contactMessage" name="mensaje" class="w-full border-0 border-b border-outline-variant focus:ring-0 focus:border-primary transition-all p-2" data-i18n-placeholder="form-message-placeholder" rows="4" required></textarea></div>
-        <button class="w-full bg-primary text-white py-4 font-label-bold rounded hover:bg-slate-gray transition-colors" type="submit" data-i18n="form-submit">ENVIAR SOLICITUD</button>
-      </form>
-    </div>
-  </div>
-</section>
-
-<footer class="bg-primary text-white border-t border-outline/30">
-  <div class="flex flex-col md:flex-row justify-between items-center px-6 md:px-section-padding py-8 gap-6 max-w-container-max mx-auto">
-    <div class="flex flex-col items-center md:items-start gap-2"><span class="font-headline-md text-white">Cali</span><p class="text-surface-variant text-xs md:text-sm max-w-xs text-center md:text-left" data-i18n="footer-text">Constructora y Desarrolladora Inmobiliaria. Su inversión en las mejores manos.</p></div>
-    <div class="flex gap-6"><a href="https://www.facebook.com/Cali503sv" target="_blank" class="text-white/70 hover:text-gold-gradient-start transition-colors text-2xl"><i class="fab fa-facebook-f"></i></a><a href="https://www.instagram.com/cali_cdi" target="_blank" class="text-white/70 hover:text-gold-gradient-start transition-colors text-2xl"><i class="fab fa-instagram"></i></a><a href="https://www.tiktok.com/@caliconstructora" target="_blank" class="text-white/70 hover:text-gold-gradient-start transition-colors text-2xl"><i class="fab fa-tiktok"></i></a></div>
-    <div class="text-center md:text-right">
-      <p class="text-surface-variant text-xs">+503 7217-9293 | +503 7920-7435</p>
-      <p class="text-surface-variant text-xs">+1 346 610 24296</p>
-      <p class="text-surface-variant text-xs mt-1">© 2025 Cali Constructora</p>
-    </div>
-  </div>
-</footer>
-
-<div id="serviceModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4 hidden transition-all duration-300">
-  <div class="absolute inset-0 bg-black/70 modal-backdrop" id="modalBackdrop"></div>
-  <div class="relative bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl modal-container">
-    <div class="sticky top-0 bg-gradient-to-r from-primary to-primary/90 text-white z-10 flex justify-between items-center p-4 rounded-t-2xl">
-      <h3 id="modalTitle" class="font-headline-md text-xl md:text-2xl"></h3>
-      <button id="closeModalBtn" class="p-2 rounded-full hover:bg-white/20 transition"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <div class="p-6">
-      <img id="modalImage" class="w-full h-64 object-cover rounded-xl shadow-md mb-6" src="" alt="Detalle">
-      <div class="mb-6">
-        <span class="inline-block bg-secondary/20 text-secondary text-xs font-bold px-3 py-1 rounded-full mb-3" data-i18n="modal-description">Descripción</span>
-        <p id="modalFullDesc" class="text-on-surface-variant text-base leading-relaxed"></p>
-      </div>
-      <div class="mb-6">
-        <span class="inline-block bg-secondary/20 text-secondary text-xs font-bold px-3 py-1 rounded-full mb-3" data-i18n="modal-features">Características destacadas</span>
-        <ul id="modalFeatures" class="grid grid-cols-1 md:grid-cols-2 gap-3"></ul>
-      </div>
-      <div class="mt-8 flex justify-center">
-        <a id="modalWhatsappLink" href="#" target="_blank" class="bg-whatsapp-green text-white px-8 py-3 rounded-full font-label-bold flex items-center gap-2 hover:brightness-110 transition shadow-md"><i class="fab fa-whatsapp text-xl"></i> <span data-i18n="modal-contact">Contactar por WhatsApp</span></a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="fixed bottom-6 right-6 z-50">
-  <button id="chatbotToggle" class="bg-primary text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 chatbot-btn">
-    <i class="fas fa-comment-dots text-2xl md:text-3xl"></i>
-  </button>
-  <div id="chatWindow" class="absolute bottom-20 right-0 w-80 md:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden chat-window">
-    <div class="bg-primary text-white p-4 flex justify-between items-center">
-      <div class="flex items-center gap-2"><i class="fas fa-robot"></i><span class="font-bold" data-i18n="chat-title">Asistente Cali</span></div>
-      <button id="chatClose" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="h-96 flex flex-col">
-      <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
-        <div class="flex items-start gap-2"><div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm" data-i18n="chat-greeting">¡Hola! 👋 Soy el asistente virtual de <strong>Cali Constructora</strong>. Puedo ayudarte con información sobre nuestros más de 20 servicios. ¿En qué te puedo ayudar hoy?</p></div></div>
-        <div class="flex items-start gap-2"><div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm" data-i18n="chat-prompt">Pregúntame sobre piscinas, pisos, techos, aires acondicionados, bienes raíces, gamer rooms y mucho más 🏗️</p></div></div>
-      </div>
-      <div class="border-t p-3 flex gap-2 bg-white">
-        <input type="text" id="chatInput" placeholder="Escribe tu mensaje..." class="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" data-i18n-placeholder="chat-placeholder">
-        <button id="chatSend" class="bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  // ==================== SERVICIOS COMPLETOS TRADUCIDOS A ESPAÑOL E INGLÉS ====================
-  const serviciosData = { es: [], en: [] };
-
-  // ----- ESPAÑOL (descripciones extensas) -----
-  serviciosData.es = [
-    { nombre: "Diseño y Construcción de Piscinas", imagen: "Piscina2.png", descripcion: "Piscinas residenciales modernas, remodelación y paisajismo.", caracteristicas: ["Diseños modernos y elegantes", "Acabados de alta calidad", "Trabajo profesional garantizado", "Diseño de jardinería", "Paisajismo y áreas verdes"], detalle: "Creamos la piscina de tus sueños con acabados premium y diseño personalizado. Transformamos tu jardín en un paraíso. Ofrecemos mantenimiento periódico y sistemas de filtración de última generación. Nuestros diseños se adaptan a cualquier espacio, por pequeño que sea. Garantizamos la máxima durabilidad y eficiencia energética. Trabajamos con revestimientos de liner, gunita o fibra de vidrio. Además, integramos sistemas de iluminación LED subacuática, calefacción solar y cascadas decorativas. El proceso incluye estudio de suelo, excavación, instalación hidráulica, eléctrica y acabados con mosaicos o piedra natural." },
-    { nombre: "Consultorios Médicos, Clínicas y Laboratorios", imagen: "medico2.png", descripcion: "Espacios que cuidan, diseñados para sanar. Cumplimos normativas.", caracteristicas: ["Diseño arquitectónico personalizado", "Construcción y remodelación", "Distribución funcional", "Materiales certificados", "Cumplimiento de normativas"], detalle: "Especialistas en diseño y construcción de espacios de salud funcionales, modernos y seguros. Cumplimos estrictamente con las normativas del Ministerio de Salud y estándares internacionales. Creamos ambientes que transmiten confianza y bienestar a sus pacientes. Utilizamos materiales antimicrobianos, pisos vinílicos de alta resistencia, pinturas hipoalergénicas y sistemas de ventilación con filtros HEPA. Optimizamos los flujos de trabajo para médicos y personal asistencial. Realizamos consultorios médicos, clínicas odontológicas, centros de diagnóstico, laboratorios clínicos y áreas de esterilización. Incluimos mobiliario especializado, señalética y cumplimiento de accesibilidad universal." },
-    { nombre: "Carpintería y Cerrajería Profesional", imagen: "Carpinteria2.png", descripcion: "Puertas, muebles a medida, closets, cocinas y más.", caracteristicas: ["Diseños a medida", "Instalación profesional", "Materiales de calidad", "Cambio de chapas", "Reparación de puertas"], detalle: "Fabricamos muebles únicos y funcionales con maderas sólidas (caoba, cedro, pino) y materiales ecológicos como MDF de alta densidad. Realizamos cocinas integrales, closets modulares, bibliotecas, recepciones para oficinas y muebles de baño. Nuestro servicio de cerrajería incluye instalación y reparación de chapas de alta seguridad, cerraduras biométricas, cambio de cilindros y duplicado de llaves. Atención rápida y garantizada. También reparamos puertas de madera y metal, bisagras, y realizamos mantenimiento de herrajes. Entregamos acabados perfectos (laca, barniz, tintes). Visita de medición y cotización sin costo." },
-    { nombre: "Instalación de Pisos", imagen: "renovarpisos2.png", descripcion: "Piso tipo madera, cerámico, porcelanato 60x60 y más medidas.", caracteristicas: ["Acabados de alta calidad", "Instalación profesional", "Diseños modernos", "Piso tipo madera", "Cerámico", "Porcelanato"], detalle: "Renovamos sus pisos con materiales de primera calidad (porcelanato, cerámica, vinilo, laminado, madera sólida) y mano de obra experta. Instalamos pisos de gran formato (60x60, 80x80, 120x60) para un acabado más moderno y minimalista. Realizamos nivelación de superficies, aplicación de cemento autonivelante, y colocación con sistemas de pega y separadores de precisión. Asesoramos en la elección del mejor producto según el tránsito, humedad y estilo deseado. Acabados antideslizantes para exteriores y baños. Dejamos su hogar limpio y listo para disfrutar." },
-    { nombre: "Renovación de Techos", imagen: "renovartechos.png", descripcion: "Instalamos y renovamos lámina, teja, arquiteja, shingles americanos.", caracteristicas: ["Trabajo profesional", "Materiales de alta calidad", "Instalación garantizada", "Lámina", "Teja", "Arquiteja", "Shingles"], detalle: "Proteja su hogar con techos resistentes y modernos. Instalamos techos de lámina galvanizada, teja de barro, teja ecológica (arquiteja) y shingles asfálticos americanos. Utilizamos materiales reflectantes que reducen la temperatura interior hasta en 5°C, ahorrando energía. También ofrecemos techos verdes y sistemas de recolección de agua de lluvia. Realizamos estructuras metálicas o de madera según necesidad. Incluimos aislamiento térmico y acústico. Instalación rápida y limpia. Presupuesto sin cargo." },
-    { nombre: "Tablaroca (Drywall)", imagen: "tablaroca.png", descripcion: "Cielos falsos, paredes, divisiones, fachadas, cornisas.", caracteristicas: ["Acabados de calidad", "Rápida instalación", "Diseños personalizados", "Cielos falsos", "Paredes divisorias", "Fachadas"], detalle: "Transforme sus espacios con drywall (tablaroca): instalación rápida, limpia y con acabados perfectos. Ideal para oficinas, hogares y locales comerciales. Realizamos cielos falsos con iluminación empotrada, paredes divisorias con aislamiento acústico, fachadas con placas antihumedad, y cornisas decorativas. Incorporamos aislamiento térmico y acústico (lana de vidrio o roca). Realizamos diseños curvos, arcos, nichos y formas especiales. Certificamos la resistencia al fuego según estándares internacionales (tablero tipo RF). Incluye masillado y pintura final." },
-    { nombre: "Glorietas, Pérgolas y Áreas de BBQ", imagen: "pergolasybarbacoa2.png", descripcion: "Transformamos tu exterior en un espacio único y funcional.", caracteristicas: ["Madera y estructura metálica", "Diseños modernos y rústicos", "Acabados premium", "Glorietas", "Pérgolas", "Áreas de barbacoa"], detalle: "Crea el jardín de tus sueños con estructuras de madera y metal. Diseñamos glorietas octagonales o rectangulares con techos de palma, teja o policarbonato. Pérgolas con sistemas de lamas orientables, toldos retráctiles e iluminación LED. Áreas de BBQ con encimeras de granito, parrillas de acero inoxidable, mesones, fregaderos y nevera incorporada. Trabajamos con maderas tratadas para exteriores (teca, cumarú, pino tropical) y acero galvanizado con pintura electrostática. Personalizamos el diseño según tus gustos. Incluye mobiliario complementario (bancas, mesas)." },
-    { nombre: "Vidriería (Ventanas y Puertas)", imagen: "Ventanasypuertas2.png", descripcion: "Ventanas, puertas corredizas, puertas para jardín y todo en vidrio.", caracteristicas: ["Diseños personalizados", "Acabados de alta calidad", "Instalación profesional", "Ventanas de vidrio", "Puertas corredizas"], detalle: "Ilumina y moderniza tu hogar con nuestras ventanas y puertas de vidrio de alta calidad. Ofrecemos vidrio templado, laminado, de control solar y doble acristalamiento (termopanel) para ahorro energético. Sistemas de apertura corrediza, abatible, oscilobatiente y plegable. Mejoramos la eficiencia energética y reducimos el ruido exterior. Instalamos herrajes de primera línea (perfiles de aluminio, PVC o madera). Realizamos mamparas para baño, ventanales panorámicos y cerramientos de terrazas. Incluye instalación profesional y limpieza." },
-    { nombre: "Diseño de Oficinas Modernas", imagen: "Oficinasmodernas2.png", descripcion: "Remodelamos y amueblamos tu oficina para inspirar productividad.", caracteristicas: ["Cielos falsos e iluminación LED", "Mobiliario corporativo", "Divisiones y recepciones", "Remodelación", "Acabados modernos", "Diseños elegantes, funcionales y profesionales"], detalle: "Oficinas que inspiran productividad. Realizamos diseño integral de espacios de trabajo: distribución optimizada, mobiliario corporativo de alta gama (escritorios, sillas ergonómicas, archivadores), cielos falsos con iluminación LED regulable, divisiones de vidrio o drywall, recepciones modernas. Incorporamos zonas de descanso (kitchenettes), salas de reuniones inteligentes con videoconferencia y cableado estructurado. Mejoramos la ventilación y la iluminación natural. Cumplimos con la normativa de accesibilidad y seguridad laboral. Incluye proyecto 3D, instalación eléctrica, red de datos y pintura." },
-    { nombre: "Encimeras de Lujo para Cocina y Pantry", imagen: "Cocina.png", descripcion: "Granito, cuarzo, piedra natural y sintetizada.", caracteristicas: ["Acabados premium", "Instalación profesional", "Durabilidad", "Slab de granito", "Cuarzo", "Piedra natural"], detalle: "Cocinas con encimeras de granito, cuarzo (marca Silestone, Ceasarstone), piedra natural (mármol, travertino) o superficies sinterizadas (Dekton, Neolith). Ofrecemos más de 100 colores y texturas, con acabados pulidos, apomazados o texturizados. Instalamos también backsplashes (salpicaderos) y barras de desayuno integradas. Sellamos las superficies para protegerlas de manchas y bacterias. Realizamos cortes exactos para fregaderos, hornos y placas de inducción. Incluye instalación profesional y retiro de residuos." },
-    { nombre: "Diseño de Interiores", imagen: "Diseñointeriores2.png", descripcion: "Espacios funcionales, elegantes y llenos de personalidad.", caracteristicas: ["Conceptos personalizados", "Selección de materiales", "Proyectos residenciales y comerciales", "Asesoría", "Decoración"], detalle: "Hacemos realidad el ambiente que siempre soñaste. Ofrecemos servicio integral de diseño de interiores: conceptualización, moodboards, renders 3D, planos de mobiliario, iluminación y selección de acabados. Te acompañamos en la compra de mobiliario, textiles, lámparas y accesorios decorativos. Optimizamos la distribución para aprovechar cada rincón. Integramos tecnología domótica (persianas, luces, audio) si lo deseas. Creamos ambientes para salas, comedores, dormitorios, y locales comerciales. Entregamos proyecto ejecutivo completo." },
-    { nombre: "Trabajos Metálicos (Puertas, Portones, Balcones)", imagen: "trabajosmétalicos2.png", descripcion: "Fabricamos e instalamos estructuras metálicas de alta resistencia.", caracteristicas: ["Trabajo profesional", "Alta resistencia", "Acabados de calidad", "Puertas metálicas", "Portones", "Balcones", "Servicio de soldadura en general"], detalle: "Seguridad y diseño con nuestras estructuras metálicas. Fabricamos e instalamos puertas metálicas (peatonales y de garaje), portones corredizos o abatibles, balcones para fachadas y terrazas, barandales, escaleras, marquesinas y estructuras para naves industriales. Trabajamos en acero inoxidable, hierro forjado, aluminio y acero al carbón. Aplicamos pintura electrostática, galvanizado o esmalte para mayor durabilidad. Realizamos trabajos de soldadura en general (MIG/TIG). Presupuestos sin compromiso. Ofrecemos servicio de mantenimiento y reparación de estructuras existentes." },
-    { nombre: "Instalación de Aire Acondicionado", imagen: "airec2.png", descripcion: "Confort, eficiencia y calidad. Marcas LG, Samsung, York, Panasonic, Gree.", caracteristicas: ["Enfriamiento rápido", "Ahorro de energía", "Funcionamiento silencioso", "Instalación en casas, oficinas, negocios", "LG", "Samsung"], detalle: "Climatización eficiente para su hogar o negocio. Instalamos equipos split, multisplit, sistemas de condensa por agua, minisplits inverter y sistemas centrales (VRF). Las mejores marcas del mercado: LG, Samsung, York, Panasonic, Gree. Realizamos cálculo de carga térmica (BTU/h necesarios) y recomendamos el equipo ideal según el tamaño del ambiente, cantidad de personas y orientación. Ofrecemos mantenimiento preventivo (limpieza de filtros, recarga de gas refrigerante) y correctivo (reparación de tableros, compresores). Instalación eléctrica y desagüe incluidos. Incluye tubería de cobre aislada, drenaje y soportes." },
-    { nombre: "Pintura Profesional", imagen: "pinturaprofesional.png", descripcion: "Damos vida, color y protección a tus espacios.", caracteristicas: ["Protección y durabilidad", "Acabados de alta calidad", "Colores que inspiran", "Pintura de casas, oficinas, clínicas", "Reparación de paredes"], detalle: "Más que pintura, creamos ambientes que inspiran. Realizamos pintura interior y exterior con acabados impecables. Utilizamos pinturas ecológicas de bajo olor y alta resistencia al lavado. Incluye reparación de paredes, resanes, masillado de grietas, lijado y preparación de superficies. Realizamos texturas (estuco, gotelé, liso), efectos decorativos (esponjado, trapo, lustre) y murales personalizados. Aseguramos muebles y pisos durante el trabajo. Servicio rápido y limpio. Presupuesto por metro cuadrado sin compromiso." },
-    { nombre: "Soluciones Eléctricas", imagen: "electricos3.png", descripcion: "Instalaciones completas, reparaciones, cableado residencial y comercial.", caracteristicas: ["Servicio rápido y seguro", "Técnicos calificados", "Trabajo garantizado", "Instalaciones completas", "Tableros eléctricos"], detalle: "Electricidad segura y eficiente para su hogar o negocio. Técnicos certificados realizan estudios de carga, instalación de tableros eléctricos (distribución, breakers, protecciones), puesta a tierra, certificación eléctrica, y reparación de cortocircuitos. Realizamos cableado residencial y comercial, instalación de luminarias, tomacorrientes, interruptores, sistemas de iluminación LED, fotoceldas y temporizadores. Trabajamos con materiales de primeras marcas (Indeco, General Electric, Schneider). Ofrecemos servicio de emergencia 24/7. Incluye diagnóstico sin costo." },
-    { nombre: "Soluciones Hidráulicas", imagen: "hidraulicas2.png", descripcion: "Instalación, mantenimiento, perforación de pozos, limpieza de cisternas.", caracteristicas: ["Trabajo profesional", "Materiales de alta calidad", "Perforación de pozos", "Limpieza de cisternas", "Sistemas pluviales"], detalle: "Agua segura y abundante. Realizamos instalaciones hidráulicas completas (tuberías de agua fría y caliente, sistemas de presión, calentadores solares). Perforación de pozos profundos hasta 150 metros, con estudio de veta y análisis de agua. Limpieza y desinfección de cisternas y tanques elevados. Elaboración de cisternas tipo cajón de concreto armado (capacidades desde 10,000 hasta 100,000 litros). Sistemas de drenaje pluvial y sanitario, con conexión a red municipal o pozo absorbente. Incluye detección de fugas con cámara térmica, reparación de tuberías sin romper (manga termorretráctil) y sistemas de bombeo eficientes." },
-    { nombre: "Maquinaria y Transporte", imagen: "Maquinariaytransp.png", descripcion: "Movimiento de tierra, transporte de material, alquiler de maquinaria.", caracteristicas: ["Experiencia y eficiencia", "Compromiso", "Cobertura desde Ahuachapán hasta Oriente", "Movimiento de tierra", "Alquiler de maquinaria"], detalle: "Logística y maquinaria para su proyecto. Contamos con retroexcavadoras, excavadoras hidráulicas, bulldozers, motoniveladoras, cargadores frontales, volquetes (dump trucks) y camiones de volteo. Realizamos movimiento de tierra (excavación, relleno, nivelación), transporte de materiales (arena, grava, tierra, escombros), y alquiler de maquinaria por hora, día o mes. Personal operador calificado y con experiencia. Cobertura desde Ahuachapán hasta La Unión (Oriente). Servicio de consultoría para cálculo de volúmenes de tierra y logística. Presupuesto en 24 horas. Facturación legal." },
-    { nombre: "Bienes Raíces", imagen: "raices.png", descripcion: "Compra y venta de propiedades, diseño de parcelaciones, desarrollo inmobiliario.", caracteristicas: ["Inversiones seguras", "Asesoría personalizada", "Propiedades disponibles", "Casas, terrenos, apartamentos, fincas"], detalle: "Su inversión segura. Encuentre la propiedad ideal con nuestro respaldo. Ofrecemos compra y venta de casas, terrenos, apartamentos, fincas y locales comerciales en todo El Salvador. Realizamos avalúos comerciales certificados, estudios de mercado, tramitación de créditos hipotecarios y acompañamiento legal completo (contratos, escrituración, registro). También diseñamos parcelaciones (división de terrenos, urbanización con servicios) y desarrollos inmobiliarios (proyectos habitacionales o comerciales llave en mano). Cartera de propiedades exclusivas. Asesoría personalizada para inversionistas nacionales e internacionales." },
-    { nombre: "Proyectos Agrícolas", imagen: "agricola2.png", descripcion: "Sistemas de riego, asesoría en cultivos, casas mayas, ganadería.", caracteristicas: ["Ingeniería agronómica", "Sostenibilidad", "Sistemas de riego", "Asesoría en cultivos", "Casas mayas"], detalle: "Aumente su producción agrícola con tecnología y asesoría especializada. Diseñamos e instalamos sistemas de riego por goteo, aspersión y microaspersión para cultivos de café, caña, hortalizas, frutales y pastos. Realizamos análisis de suelo (pH, nutrientes, textura), recomendación de fertilización, control de plagas y manejo integrado de cultivos. Construimos casas mayas (estructuras de madera y plástico para viveros o protección de cultivos). Asesoría en ganadería sostenible (pastos mejorados, manejo de praderas, sistemas silvopastoriles). Incluye capacitación a agricultores." },
-    { nombre: "Gamer Room", imagen: "gamer.png", descripcion: "Creamos tu cuarto gamer desde cero con diseño moderno y funcional.", caracteristicas: ["Diseño 3D personalizado", "Iluminación LED RGB", "Muebles a medida", "Paredes decorativas"], detalle: "El espacio gamer que siempre quisiste. Realizamos diseño 3D personalizado de tu habitación o rincón gamer, incluyendo distribución de equipos, mobiliario a medida (mesas en L, estanterías, soportes para torre), iluminación LED RGB sincronizable con el equipo (tiras, paneles, teclado, mouse), paredes decorativas con paneles acústicos y vinilos de tus juegos favoritos. Incorporamos sistemas de gestión de cables ocultos, sonido envolvente 5.1 o 7.1, sillas ergonómicas y climatización. Instalamos cortinas blackout para evitar reflejos." },
-    { nombre: "Cámaras de Vigilancia para Vivienda", imagen: "Camaras2.jpeg", descripcion: "Seguridad inteligente para tu hogar y tranquilidad para tu familia.", caracteristicas: ["Protege lo que más importa", "Vigila tu hogar en HD", "Instalación profesional", "Cámaras de vigilancia"], detalle: "Vigile su hogar desde su celular con sistemas de seguridad profesional. Ofrecemos cámaras IP con resolución 4K, visión nocturna, detección de movimiento, audio bidireccional, y almacenamiento en la nube o en NVR (grabador de red). Instalamos sistemas desde 2 hasta 32 cámaras, con monitoreo remoto 24/7 desde su smartphone o computadora. Incluye alarmas con sensores de movimiento, contacto magnético para puertas/ventanas, y sirenas. Personal capacitado realiza tendido de cableado, configuración de red y aplicación móvil. Aseguramos la privacidad y protección de datos. Contratos de mantenimiento preventivo disponibles." }
-  ];
-
-  // ----- INGLÉS (traducción completa) -----
   serviciosData.en = [
-    { nombre: "Swimming Pool Design and Construction", imagen: "Piscina2.png", descripcion: "Modern residential pools, renovation and landscaping.", caracteristicas: ["Modern and elegant designs", "High quality finishes", "Guaranteed professional work", "Landscape design", "Green areas and landscaping"], detalle: "We create the pool of your dreams with premium finishes and custom design. We transform your garden into a paradise. We offer periodic maintenance and state-of-the-art filtration systems. Our designs adapt to any space, no matter how small. We guarantee maximum durability and energy efficiency. We work with liner, gunite or fiberglass coatings. We also integrate underwater LED lighting systems, solar heating and decorative waterfalls. The process includes soil study, excavation, hydraulic and electrical installation, and finishes with mosaics or natural stone." },
-    { nombre: "Medical Offices, Clinics and Laboratories", imagen: "medico2.png", descripcion: "Spaces that care, designed to heal. We comply with regulations.", caracteristicas: ["Custom architectural design", "Construction and renovation", "Functional distribution", "Certified materials", "Regulatory compliance"], detalle: "Specialists in the design and construction of functional, modern and safe healthcare spaces. We strictly comply with Ministry of Health regulations and international standards. We create environments that convey trust and well-being to your patients. We use antimicrobial materials, high-resistance vinyl floors, hypoallergenic paints and ventilation systems with HEPA filters. We optimize workflows for doctors and healthcare staff. We build medical offices, dental clinics, diagnostic centers, clinical laboratories and sterilization areas. Includes specialized furniture, signage and universal accessibility compliance." },
-    { nombre: "Professional Carpentry and Locksmithing", imagen: "Carpinteria2.png", descripcion: "Doors, custom furniture, closets, kitchens and more.", caracteristicas: ["Custom designs", "Professional installation", "Quality materials", "Lock replacement", "Door repair"], detalle: "We manufacture unique and functional furniture with solid woods (mahogany, cedar, pine) and eco-friendly materials like high-density MDF. We build custom kitchens, modular closets, libraries, office reception desks and bathroom furniture. Our locksmith service includes installation and repair of high-security locks, biometric locks, cylinder replacement and key duplication. Fast and guaranteed service. We also repair wooden and metal doors, hinges, and perform hardware maintenance. We deliver perfect finishes (lacquer, varnish, stains). Free measurement visit and quote." },
-    { nombre: "Floor Installation", imagen: "renovarpisos2.png", descripcion: "Wood-look, ceramic, porcelain 60x60 and other sizes.", caracteristicas: ["High quality finishes", "Professional installation", "Modern designs", "Wood-look flooring", "Ceramic", "Porcelain"], detalle: "Renovate your floors with top quality materials (porcelain, ceramic, vinyl, laminate, solid wood) and expert workmanship. We install large format floors (60x60, 80x80, 120x60) for a more modern and minimalist finish. We perform surface leveling, self-leveling cement application, and installation with precision adhesive and spacer systems. We advise you on choosing the best product based on traffic, humidity and desired style. Non-slip finishes for exteriors and bathrooms. We leave your home clean and ready to enjoy." },
-    { nombre: "Roof Renovation", imagen: "renovartechos.png", descripcion: "We install and renovate sheet metal, tile, eco-tile, American shingles.", caracteristicas: ["Professional work", "High quality materials", "Guaranteed installation", "Sheet metal", "Clay tile", "Eco-tile", "Shingles"], detalle: "Protect your home with resistant and modern roofs. We install galvanized sheet metal roofs, clay tiles, eco-tiles (arquiteja) and American asphalt shingles. We use reflective materials that reduce indoor temperature by up to 5°C, saving energy. We also offer green roofs and rainwater harvesting systems. We build metal or wooden structures as needed. Includes thermal and acoustic insulation. Fast and clean installation. Free estimate." },
-    { nombre: "Drywall", imagen: "tablaroca.png", descripcion: "False ceilings, walls, partitions, facades, cornices.", caracteristicas: ["Quality finishes", "Fast installation", "Custom designs", "False ceilings", "Partition walls", "Facades"], detalle: "Transform your spaces with drywall: fast, clean installation with perfect finishes. Ideal for offices, homes and commercial spaces. We install false ceilings with recessed lighting, partition walls with acoustic insulation, facades with moisture-resistant panels, and decorative cornices. We incorporate thermal and acoustic insulation (fiberglass or rock wool). We create curved designs, arches, niches and special shapes. We certify fire resistance according to international standards (RF type board). Includes puttying and final painting." },
-    { nombre: "Gazebos, Pergolas and BBQ Areas", imagen: "pergolasybarbacoa2.png", descripcion: "Transform your outdoor space into a unique and functional area.", caracteristicas: ["Wood and metal structure", "Modern and rustic designs", "Premium finishes", "Gazebos", "Pergolas", "BBQ areas"], detalle: "Create the garden of your dreams with wood and metal structures. We design octagonal or rectangular gazebos with palm, tile or polycarbonate roofs. Pergolas with adjustable slat systems, retractable awnings and LED lighting. BBQ areas with granite countertops, stainless steel grills, countertops, sinks and built-in refrigerator. We work with treated woods for exteriors (teak, cumaru, tropical pine) and galvanized steel with electrostatic paint. We customize the design according to your tastes. Includes complementary furniture (benches, tables)." },
-    { nombre: "Glasswork (Windows and Doors)", imagen: "Ventanasypuertas2.png", descripcion: "Windows, sliding doors, garden doors and everything in glass.", caracteristicas: ["Custom designs", "High quality finishes", "Professional installation", "Glass windows", "Sliding doors"], detalle: "Brighten and modernize your home with our high-quality glass windows and doors. We offer tempered, laminated, solar control and double-glazed glass (thermopane) for energy savings. Sliding, hinged, tilt-and-turn and folding opening systems. We improve energy efficiency and reduce outside noise. We install top-quality hardware (aluminum, PVC or wood profiles). We build bathroom screens, panoramic windows and terrace enclosures. Includes professional installation and cleaning." },
-    { nombre: "Modern Office Design", imagen: "Oficinasmodernas2.png", descripcion: "Remodel and furnish your office to inspire productivity.", caracteristicas: ["False ceilings and LED lighting", "Corporate furniture", "Partitions and reception desks", "Remodeling", "Modern finishes", "Elegant, functional and professional designs"], detalle: "Offices that inspire productivity. We provide comprehensive office space design: optimized distribution, high-end corporate furniture (desks, ergonomic chairs, filing cabinets), false ceilings with dimmable LED lighting, glass or drywall partitions, modern reception desks. We incorporate break areas (kitchenettes), smart meeting rooms with video conferencing and structured cabling. We improve ventilation and natural lighting. We comply with accessibility and occupational safety regulations. Includes 3D project, electrical installation, data network and painting." },
-    { nombre: "Luxury Countertops for Kitchen and Pantry", imagen: "Cocina.png", descripcion: "Granite, quartz, natural and sintered stone.", caracteristicas: ["Premium finishes", "Professional installation", "Durability", "Granite slab", "Quartz", "Natural stone"], detalle: "Kitchens with countertops in granite, quartz (Silestone, Caesarstone), natural stone (marble, travertine) or sintered surfaces (Dekton, Neolith). We offer over 100 colors and textures, with polished, honed or textured finishes. We also install backsplashes and integrated breakfast bars. We seal surfaces to protect them from stains and bacteria. We make precise cuts for sinks, ovens and induction hobs. Includes professional installation and waste removal." },
-    { nombre: "Interior Design", imagen: "Diseñointeriores2.png", descripcion: "Functional, elegant spaces full of personality.", caracteristicas: ["Custom concepts", "Material selection", "Residential and commercial projects", "Consulting", "Decoration"], detalle: "We make the environment you always dreamed of a reality. We offer comprehensive interior design service: conceptualization, mood boards, 3D renderings, furniture plans, lighting and finish selection. We accompany you in purchasing furniture, textiles, lamps and decorative accessories. We optimize distribution to make the most of every corner. We integrate home automation technology (blinds, lights, audio) if desired. We create environments for living rooms, dining rooms, bedrooms, and commercial spaces. We deliver complete executive project." },
-    { nombre: "Metalwork (Doors, Gates, Balconies)", imagen: "trabajosmétalicos2.png", descripcion: "We manufacture and install high-strength metal structures.", caracteristicas: ["Professional work", "High strength", "Quality finishes", "Metal doors", "Gates", "Balconies", "General welding service"], detalle: "Security and design with our metal structures. We manufacture and install metal doors (pedestrian and garage), sliding or swinging gates, facade and terrace balconies, railings, stairs, canopies and industrial building structures. We work with stainless steel, wrought iron, aluminum and carbon steel. We apply electrostatic paint, galvanizing or enamel for greater durability. We perform general welding work (MIG/TIG). Free estimates. We offer maintenance and repair service for existing structures." },
-    { nombre: "Air Conditioning Installation", imagen: "airec2.png", descripcion: "Comfort, efficiency and quality. Brands: LG, Samsung, York, Panasonic, Gree.", caracteristicas: ["Rapid cooling", "Energy savings", "Silent operation", "Installation in homes, offices, businesses", "LG", "Samsung"], detalle: "Efficient air conditioning for your home or business. We install split units, multi-split systems, water-cooled systems, mini-split inverter and central systems (VRF). The best brands on the market: LG, Samsung, York, Panasonic, Gree. We perform thermal load calculation (required BTU/h) and recommend the ideal equipment based on room size, number of people and orientation. We offer preventive maintenance (filter cleaning, refrigerant gas recharge) and corrective maintenance (board and compressor repair). Includes electrical installation and drainage. Includes insulated copper pipe, drainage and supports." },
-    { nombre: "Professional Painting", imagen: "pinturaprofesional.png", descripcion: "We give life, color and protection to your spaces.", caracteristicas: ["Protection and durability", "High quality finishes", "Inspiring colors", "House, office, clinic painting", "Wall repair"], detalle: "More than paint, we create inspiring environments. We perform interior and exterior painting with flawless finishes. We use eco-friendly, low-odor, high-wash-resistant paints. Includes wall repair, patching, crack filling, sanding and surface preparation. We create textures (stucco, splatter, smooth), decorative effects (sponged, rag, gloss) and custom murals. We protect furniture and floors during work. Fast and clean service. Price per square meter free of charge." },
-    { nombre: "Electrical Solutions", imagen: "electricos3.png", descripcion: "Complete installations, repairs, residential and commercial wiring.", caracteristicas: ["Fast and safe service", "Qualified technicians", "Guaranteed work", "Complete installations", "Electrical panels"], detalle: "Safe and efficient electricity for your home or business. Certified technicians perform load studies, electrical panel installation (distribution, breakers, protections), grounding, electrical certification, and short circuit repair. We perform residential and commercial wiring, installation of light fixtures, outlets, switches, LED lighting systems, photocells and timers. We work with top brand materials (Indeco, General Electric, Schneider). We offer 24/7 emergency service. Includes free diagnosis." },
-    { nombre: "Hydraulic Solutions", imagen: "hidraulicas2.png", descripcion: "Installation, maintenance, well drilling, cistern cleaning.", caracteristicas: ["Professional work", "High quality materials", "Well drilling", "Cistern cleaning", "Stormwater systems"], detalle: "Safe and abundant water. We perform complete hydraulic installations (hot and cold water pipes, pressure systems, solar heaters). Deep well drilling up to 150 meters, with vein study and water analysis. Cleaning and disinfection of cisterns and elevated tanks. Construction of reinforced concrete box-type cisterns (capacities from 10,000 to 100,000 liters). Storm and sanitary drainage systems, with connection to municipal network or absorption well. Includes leak detection with thermal camera, pipe repair without breaking (heat shrink sleeve) and efficient pumping systems." },
-    { nombre: "Machinery and Transportation", imagen: "Maquinariaytransp.png", descripcion: "Earth moving, material transport, machinery rental.", caracteristicas: ["Experience and efficiency", "Commitment", "Coverage from Ahuachapán to Oriente", "Earth moving", "Machinery rental"], detalle: "Logistics and machinery for your project. We have backhoes, hydraulic excavators, bulldozers, motor graders, front loaders, dump trucks and tipper trucks. We perform earth moving (excavation, filling, leveling), material transport (sand, gravel, earth, debris), and machinery rental by hour, day or month. Qualified and experienced operator personnel. Coverage from Ahuachapán to La Unión (Oriente). Consulting service for earth volume calculation and logistics. Estimate within 24 hours. Legal invoicing." },
-    { nombre: "Real Estate", imagen: "raices.png", descripcion: "Property purchase and sale, subdivision design, real estate development.", caracteristicas: ["Secure investments", "Personalized advice", "Available properties", "Houses, land, apartments, farms"], detalle: "Your secure investment. Find the ideal property with our backing. We offer purchase and sale of houses, land, apartments, farms and commercial premises throughout El Salvador. We perform certified commercial appraisals, market studies, mortgage credit processing and complete legal accompaniment (contracts, notarization, registration). We also design subdivisions (land division, urbanization with services) and real estate developments (turnkey residential or commercial projects). Exclusive property portfolio. Personalized advice for national and international investors." },
-    { nombre: "Agricultural Projects", imagen: "agricola2.png", descripcion: "Irrigation systems, crop consulting, Mayan houses, livestock.", caracteristicas: ["Agronomic engineering", "Sustainability", "Irrigation systems", "Crop consulting", "Mayan houses"], detalle: "Increase your agricultural production with technology and specialized advice. We design and install drip, sprinkler and micro-sprinkler irrigation systems for coffee, sugarcane, vegetables, fruit trees and pastures. We perform soil analysis (pH, nutrients, texture), fertilization recommendations, pest control and integrated crop management. We build Mayan houses (wood and plastic structures for nurseries or crop protection). Advice on sustainable livestock (improved pastures, grassland management, silvopastoral systems). Includes farmer training." },
-    { nombre: "Gamer Room", imagen: "gamer.png", descripcion: "We create your gamer room from scratch with modern and functional design.", caracteristicas: ["Custom 3D design", "RGB LED lighting", "Custom furniture", "Decorative walls"], detalle: "The gaming space you always wanted. We perform custom 3D design of your gamer room or corner, including equipment distribution, custom furniture (L-shaped desks, shelves, tower supports), RGB LED lighting synchronizable with your equipment (strips, panels, keyboard, mouse), decorative walls with acoustic panels and vinyls of your favorite games. We incorporate hidden cable management systems, 5.1 or 7.1 surround sound, ergonomic chairs and climate control. We install blackout curtains to avoid reflections." },
-    { nombre: "Home Surveillance Cameras", imagen: "Camaras2.jpeg", descripcion: "Smart security for your home and peace of mind for your family.", caracteristicas: ["Protect what matters most", "Monitor your home in HD", "Professional installation", "Surveillance cameras"], detalle: "Monitor your home from your cell phone with professional security systems. We offer IP cameras with 4K resolution, night vision, motion detection, two-way audio, and cloud or NVR storage. We install systems from 2 to 32 cameras, with 24/7 remote monitoring from your smartphone or computer. Includes alarms with motion sensors, magnetic contact for doors/windows, and sirens. Trained personnel perform cabling, network configuration and mobile application setup. We ensure privacy and data protection. Preventive maintenance contracts available." }
+    { nombre: "Swimming Pool Design", imagen: "Piscina2.png", descripcion: "Modern residential pools, renovation and landscaping.", caracteristicas: ["Modern designs", "High quality finishes", "Guaranteed work"], detalle: "We create the pool of your dreams with premium finishes." },
+    { nombre: "Floor Installation", imagen: "renovarpisos2.png", descripcion: "Wood-look, ceramic, porcelain flooring.", caracteristicas: ["Quality finishes", "Professional installation", "Modern designs"], detalle: "Renovate your floors with top quality materials." },
+    { nombre: "Roof Renovation", imagen: "renovartechos.png", descripcion: "Sheet metal, tile, shingles installation.", caracteristicas: ["Professional work", "Quality materials", "Guaranteed installation"], detalle: "Protect your home with resistant modern roofs." },
+    { nombre: "Drywall", imagen: "tablaroca.png", descripcion: "False ceilings, walls, partitions.", caracteristicas: ["Quality finishes", "Fast installation", "Custom designs"], detalle: "Transform your spaces with drywall." },
+    { nombre: "Gazebos and BBQ Areas", imagen: "pergolasybarbacoa2.png", descripcion: "Transform your outdoor space.", caracteristicas: ["Wood and metal structure", "Modern designs", "Premium finishes"], detalle: "Create the garden of your dreams." },
+    { nombre: "Glasswork", imagen: "Ventanasypuertas2.png", descripcion: "Windows and doors.", caracteristicas: ["Custom designs", "Quality finishes", "Professional installation"], detalle: "Brighten your home with glass windows and doors." },
+    { nombre: "Modern Office Design", imagen: "Oficinasmodernas2.png", descripcion: "Remodel and furnish your office.", caracteristicas: ["LED lighting", "Corporate furniture", "Modern finishes"], detalle: "Offices that inspire productivity." },
+    { nombre: "Luxury Countertops", imagen: "Cocina.png", descripcion: "Granite, quartz, natural stone.", caracteristicas: ["Premium finishes", "Professional installation", "Durability"], detalle: "Kitchens with granite and quartz countertops." },
+    { nombre: "Interior Design", imagen: "Diseñointeriores2.png", descripcion: "Functional elegant spaces.", caracteristicas: ["Custom concepts", "Material selection", "Residential projects"], detalle: "We make your dream environment a reality." },
+    { nombre: "Air Conditioning", imagen: "airec2.png", descripcion: "Comfort and efficiency.", caracteristicas: ["Rapid cooling", "Energy savings", "Silent operation"], detalle: "Efficient air conditioning for your home." },
+    { nombre: "Professional Painting", imagen: "pinturaprofesional.png", descripcion: "Color and protection.", caracteristicas: ["Durability", "Quality finishes", "Inspiring colors"], detalle: "More than paint, we create inspiring environments." },
+    { nombre: "Electrical Solutions", imagen: "electricos3.png", descripcion: "Complete installations and repairs.", caracteristicas: ["Fast service", "Qualified technicians", "Guaranteed work"], detalle: "Safe efficient electricity for your home." },
+    { nombre: "Real Estate", imagen: "raices.png", descripcion: "Property sales and purchases.", caracteristicas: ["Secure investments", "Personalized advice", "Available properties"], detalle: "Find the ideal property with our backing." },
+    { nombre: "Gamer Room", imagen: "gamer.png", descripcion: "Your ideal gaming space.", caracteristicas: ["Custom 3D design", "RGB LED lighting", "Custom furniture"], detalle: "The gaming space you always wanted." },
+    { nombre: "Surveillance Cameras", imagen: "Camaras2.jpeg", descripcion: "Smart security for your home.", caracteristicas: ["Protect what matters", "HD monitoring", "Professional installation"], detalle: "Monitor your home from your cell phone." }
   ];
 
-  // ========== TEXTO ESTÁTICO TRADUCIDO A ESPAÑOL E INGLÉS ==========
+  // ========== TRADUCCIONES ==========
   const staticTranslations = {
     es: {
       brandSubtitle: "Constructora y Desarrolladora Inmobiliaria", "nav-home": "Inicio", "nav-services": "Servicios", "nav-contact": "Contacto",
@@ -812,43 +412,176 @@
       "hero-contact-btn": "Contáctanos", "hero-services-btn": "Nuestros Servicios", "about-badge": "SOBRE NOSOTROS", "about-title": "Expertos en Desarrollo Inmobiliario Transnacional",
       "about-desc": "Con una sólida presencia en El Salvador, Estados Unidos, Canadá y toda Centroamérica, en Cali Constructora nos especializamos en transformar visiones en realidades estructurales.",
       "about-quote": "\"Construimos más que casas, construimos sueños y futuros.\"", "about-exp-label": "DE EXPERIENCIA", "services-title": "Servicios Profesionales",
-      "services-subtitle": "Más de 20 especialidades para transformar tus espacios", "search-placeholder": "Buscar servicio (ej: piscina, techo, gamer...)", "no-results": "No se encontraron servicios. Prueba con otra palabra.",
-      "why-title": "Por qué somos su mejor elección", "why-point1-title": "Acabados de Lujo", "why-point1-desc": "Materiales premium y mano de obra experta en cada detalle.",
-      "why-point2-title": "Instalación Profesional", "why-point2-desc": "Equipo técnico capacitado con estándares internacionales.", "why-point3-title": "Cobertura Total", "why-point3-desc": "Operaciones en El Salvador, USA y Canadá con un solo interlocutor.",
-      "why-point4-title": "Contratos Jurídicos", "why-point4-desc": "Garantía legal y seguridad para su inversión.", "join-badge": "ÚNETE A NUESTRO EQUIPO", "join-title": "Asesores de Bienes Raíces y Construcción",
-      "join-desc": "Buscamos profesionales comprometidos para liderar el mercado inmobiliario en la región. Forma parte de la constructora con mayor proyección.", "join-feature1": "Colaboración", "join-feature2": "Crecimiento", "join-feature3": "Ética",
+      "services-subtitle": "Más de 15 especialidades para transformar tus espacios", "search-placeholder": "Buscar servicio (ej: piscina, techo, gamer...)", "no-results": "No se encontraron servicios.",
+      "why-title": "Por qué somos su mejor elección", "why-point1-title": "Acabados de Lujo", "why-point1-desc": "Materiales premium y mano de obra experta.",
+      "why-point2-title": "Instalación Profesional", "why-point2-desc": "Equipo técnico capacitado con estándares internacionales.",
+      "why-point3-title": "Cobertura Total", "why-point3-desc": "Operaciones en El Salvador, USA y Canadá.",
+      "why-point4-title": "Contratos Jurídicos", "why-point4-desc": "Garantía legal y seguridad para su inversión.",
+      "join-badge": "ÚNETE A NUESTRO EQUIPO", "join-title": "Asesores de Bienes Raíces y Construcción",
+      "join-desc": "Buscamos profesionales comprometidos para liderar el mercado inmobiliario.", "join-feature1": "Colaboración", "join-feature2": "Crecimiento", "join-feature3": "Ética",
       "contact-title": "Iniciemos su proyecto hoy", "contact-sv-label1": "El Salvador", "contact-usa-label": "United States", "contact-email-label": "Email",
       "form-name": "Nombre Completo", "form-phone": "Teléfono", "form-service": "Tipo de Servicio", "form-message": "Mensaje", "form-submit": "ENVIAR SOLICITUD",
       "form-message-placeholder": "Cuéntenos sobre su sueño...",
-      "footer-text": "Constructora y Desarrolladora Inmobiliaria. Su inversión en las mejores manos.", "modal-description": "Descripción", "modal-features": "Características destacadas", "modal-contact": "Contactar por WhatsApp",
-      "chat-title": "Asistente Cali", "chat-greeting": "¡Hola! 👋 Soy el asistente virtual de <strong>Cali Constructora</strong>. Puedo ayudarte con información sobre nuestros más de 20 servicios. ¿En qué te puedo ayudar hoy?", "chat-prompt": "Pregúntame sobre piscinas, pisos, techos, aires acondicionados, bienes raíces, gamer rooms y mucho más 🏗️", "chat-placeholder": "Escribe tu mensaje...",
-      "chat-price": "Los precios varían según el proyecto. Por favor contáctanos por WhatsApp al +503 7953 9980 para un presupuesto personalizado y gratuito.",
-      "chat-default": "Gracias por tu mensaje. Un asesor se pondrá en contacto contigo a la brevedad. Mientras tanto, puedes escribirnos directamente por WhatsApp al +503 7953 9980 para una atención más rápida."
+      "footer-text": "Constructora y Desarrolladora Inmobiliaria. Su inversión en las mejores manos.",
+      "modal-description": "Descripción", "modal-features": "Características destacadas", "modal-contact": "Contactar por WhatsApp",
+      "chat-title": "Asistente Cali", "chat-greeting": "¡Hola! 👋 Soy el asistente virtual de <strong>Cali Constructora</strong>. ¿En qué te puedo ayudar hoy?",
+      "chat-placeholder": "Escribe tu mensaje...",
+      "chat-price": "Los precios varían según el proyecto. Contáctanos por WhatsApp al +503 7953 9980 para un presupuesto personalizado y gratuito.",
+      "chat-default": "Gracias por tu mensaje. Un asesor se pondrá en contacto contigo a la brevedad. Mientras tanto, puedes escribirnos directamente por WhatsApp al +503 7953 9980."
     },
     en: {
       brandSubtitle: "Construction and Real Estate Developer", "nav-home": "Home", "nav-services": "Services", "nav-contact": "Contact",
       "hero-title1": "We build your dreams,", "hero-title2": "we build your home.", "hero-subtitle": "Design, construction and remodeling with quality, trust and commitment in El Salvador, USA and Canada.",
       "hero-contact-btn": "Contact us", "hero-services-btn": "Our Services", "about-badge": "ABOUT US", "about-title": "Experts in Transnational Real Estate Development",
-      "about-desc": "With a strong presence in El Salvador, United States, Canada and all of Central America, at Cali Constructora we specialize in transforming visions into structural realities.",
-      "about-quote": "\"We build more than houses, we build dreams and futures.\"", "about-exp-label": "YEARS OF EXPERIENCE", "services-title": "Professional Services",
-      "services-subtitle": "More than 20 specialties to transform your spaces", "search-placeholder": "Search service (e.g.: pool, roof, gamer...)", "no-results": "No services found. Try another word.",
-      "why-title": "Why we are your best choice", "why-point1-title": "Luxury Finishes", "why-point1-desc": "Premium materials and expert craftsmanship in every detail.",
-      "why-point2-title": "Professional Installation", "why-point2-desc": "Technical team trained to international standards.", "why-point3-title": "Total Coverage", "why-point3-desc": "Operations in El Salvador, USA and Canada with a single contact.",
-      "why-point4-title": "Legal Contracts", "why-point4-desc": "Legal guarantee and security for your investment.", "join-badge": "JOIN OUR TEAM", "join-title": "Real Estate and Construction Advisors",
-      "join-desc": "We look for committed professionals to lead the real estate market in the region. Be part of the most promising construction company.", "join-feature1": "Collaboration", "join-feature2": "Growth", "join-feature3": "Ethics",
+      "about-desc": "With a strong presence in El Salvador, United States, Canada and Central America, we transform visions into structural realities.",
+      "about-quote": "\"We build more than houses, we build dreams and futures.\"", "about-exp-label": "YEARS EXPERIENCE", "services-title": "Professional Services",
+      "services-subtitle": "More than 15 specialties to transform your spaces", "search-placeholder": "Search service (e.g.: pool, roof, gamer...)", "no-results": "No services found.",
+      "why-title": "Why choose us", "why-point1-title": "Luxury Finishes", "why-point1-desc": "Premium materials and expert craftsmanship.",
+      "why-point2-title": "Professional Installation", "why-point2-desc": "Technical team trained to international standards.",
+      "why-point3-title": "Total Coverage", "why-point3-desc": "Operations in El Salvador, USA and Canada.",
+      "why-point4-title": "Legal Contracts", "why-point4-desc": "Legal guarantee for your investment.",
+      "join-badge": "JOIN OUR TEAM", "join-title": "Real Estate and Construction Advisors",
+      "join-desc": "We look for committed professionals to lead the real estate market.", "join-feature1": "Collaboration", "join-feature2": "Growth", "join-feature3": "Ethics",
       "contact-title": "Start your project today", "contact-sv-label1": "El Salvador", "contact-usa-label": "United States", "contact-email-label": "Email",
-      "form-name": "Full Name", "form-phone": "Phone", "form-service": "Type of Service", "form-message": "Message", "form-submit": "SEND REQUEST",
+      "form-name": "Full Name", "form-phone": "Phone", "form-service": "Service Type", "form-message": "Message", "form-submit": "SEND REQUEST",
       "form-message-placeholder": "Tell us about your dream...",
-      "footer-text": "Construction and Real Estate Developer. Your investment in the best hands.", "modal-description": "Description", "modal-features": "Key features", "modal-contact": "Contact via WhatsApp",
-      "chat-title": "Cali Assistant", "chat-greeting": "Hello! 👋 I'm the virtual assistant of <strong>Cali Constructora</strong>. I can help you with information about our more than 20 services. How can I help you today?", "chat-prompt": "Ask me about pools, floors, roofs, air conditioning, real estate, gamer rooms and more 🏗️", "chat-placeholder": "Type your message...",
-      "chat-price": "Prices vary depending on the project. Please contact us via WhatsApp at +503 7953 9980 for a personalized and free quote.",
-      "chat-default": "Thank you for your message. An advisor will contact you shortly. In the meantime, you can write to us directly on WhatsApp at +503 7953 9980 for faster assistance."
+      "footer-text": "Construction and Real Estate Developer. Your investment in the best hands.",
+      "modal-description": "Description", "modal-features": "Key features", "modal-contact": "Contact via WhatsApp",
+      "chat-title": "Cali Assistant", "chat-greeting": "Hello! 👋 I'm Cali's virtual assistant. How can I help you today?",
+      "chat-placeholder": "Type your message...",
+      "chat-price": "Prices vary depending on the project. Please contact us via WhatsApp at +503 7953 9980 for a personalized free quote.",
+      "chat-default": "Thank you for your message. An advisor will contact you shortly. In the meantime, you can write to us directly on WhatsApp at +503 7953 9980."
     }
   };
 
   let currentLang = "es";
   let allCards = [];
+  let chatHistory = [];
 
+  // Construir System Prompt para el Worker
+  function buildSystemPrompt(lang) {
+    const serviciosLista = (serviciosData[lang] || serviciosData.es)
+      .map(s => `- ${s.nombre}: ${s.descripcion}`)
+      .join('\n');
+
+    if (lang === 'en') {
+      return `You are Cali Constructora's virtual assistant, a construction and real estate company in El Salvador, USA and Canada.
+
+COMPANY INFO:
+- Phones: +503 7217-9293, +503 7920-7435 (SV) | +1 346 610 24296 (USA)
+- WhatsApp: +503 7953-9980
+- Email: iarq.home.solutions.sv@gmail.com
+- 15+ years experience
+- Facebook: /Cali503sv | Instagram: @cali_cdi | TikTok: @caliconstructora
+
+SERVICES:
+${serviciosLista}
+
+INSTRUCTIONS:
+- Answer in English. Be helpful, professional and concise (2-4 sentences).
+- For prices: always say they vary by project and invite to contact via WhatsApp at +503 7953-9980 for a free quote.
+- Never invent services not listed above.`;
+    }
+
+    return `Eres el asistente virtual de Cali Constructora, una empresa de construcción e inmobiliaria en El Salvador, USA y Canadá.
+
+INFORMACIÓN DE LA EMPRESA:
+- Teléfonos: +503 7217-9293, +503 7920-7435 (SV) | +1 346 610 24296 (USA)
+- WhatsApp: +503 7953-9980
+- Email: iarq.home.solutions.sv@gmail.com
+- 15+ años de experiencia
+- Facebook: /Cali503sv | Instagram: @cali_cdi | TikTok: @caliconstructora
+
+SERVICIOS:
+${serviciosLista}
+
+INSTRUCCIONES:
+- Responde en español. Sé amable, profesional y conciso (2-4 oraciones).
+- Para precios: indica que varían según proyecto e invita a contactar por WhatsApp al +503 7953-9980 para presupuesto gratuito.
+- Nunca inventes servicios que no estén listados arriba.`;
+  }
+
+  // Funciones del chat
+  function addChatMessage(text, isUser = false) {
+    const messagesDiv = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `flex items-start gap-2 ${isUser ? 'justify-end' : ''}`;
+    if (isUser) {
+      div.innerHTML = `<div class="bg-primary text-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm">${text}</p></div><div class="bg-gray-300 text-gray-700 rounded-full p-1.5"><i class="fas fa-user text-xs"></i></div>`;
+    } else {
+      div.innerHTML = `<div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm">${text}</p></div>`;
+    }
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    const messagesDiv = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.id = 'typingIndicator';
+    div.className = 'flex items-start gap-2';
+    div.innerHTML = `<div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm"><div class="flex gap-1"><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0s"></span><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.15s"></span><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.3s"></span></div></div>`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+  }
+
+  async function sendToWorker(userMsg, lang) {
+    addTypingIndicator();
+    chatHistory.push({ role: 'user', content: userMsg });
+    const recentHistory = chatHistory.slice(-8);
+
+    try {
+      const response = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: buildSystemPrompt(lang),
+          messages: recentHistory
+        })
+      });
+
+      if (!response.ok) throw new Error('Worker error');
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || (lang === 'en' ? 'Sorry, an error occurred.' : 'Disculpa, ocurrió un error.');
+      
+      chatHistory.push({ role: 'assistant', content: reply });
+      removeTypingIndicator();
+      addChatMessage(reply);
+    } catch (err) {
+      console.error('Chat error:', err);
+      removeTypingIndicator();
+      const t = staticTranslations[lang] || staticTranslations.es;
+      addChatMessage(t['chat-default']);
+    }
+  }
+
+  function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    addChatMessage(text, true);
+    input.value = '';
+    sendToWorker(text, currentLang);
+  }
+
+  // Configurar event listeners del chat
+  document.getElementById('chatbotToggle')?.addEventListener('click', () => {
+    document.getElementById('chatWindow').classList.toggle('open');
+  });
+  document.getElementById('chatClose')?.addEventListener('click', () => {
+    document.getElementById('chatWindow').classList.remove('open');
+  });
+  document.getElementById('chatSend')?.addEventListener('click', sendChatMessage);
+  document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+  });
+
+  // Funciones de la página principal
   function buildCards(lang) {
     const container = document.getElementById('servicios-container');
     if (!container) return;
@@ -857,20 +590,20 @@
     allCards = [];
     servicios.forEach((servicio, idx) => {
       const card = document.createElement('div');
-      card.className = 'bg-white p-2 rounded-lg border border-outline-variant/30 shadow-architectural transition-all duration-300';
+      card.className = 'bg-white p-2 rounded-lg border border-outline-variant/30 shadow-architectural transition-all duration-300 cursor-pointer';
       let caracteristicasHTML = '';
-      servicio.caracteristicas.slice(0, 5).forEach(c => {
+      servicio.caracteristicas.slice(0, 3).forEach(c => {
         caracteristicasHTML += `<li class="flex items-center gap-2"><span class="material-symbols-outlined text-secondary text-sm">check_circle</span> ${c}</li>`;
       });
       const badgeText = lang === 'es' ? 'Servicio Especializado' : 'Specialized Service';
       const btnText = lang === 'es' ? 'Ver Detalles' : 'View Details';
       card.innerHTML = `
-        <img class="w-full h-48 object-cover rounded-t-lg mb-6" src="${servicio.imagen}" onerror="this.src='https://placehold.co/600x400/1a1a2e/ffffff?text=${encodeURIComponent(servicio.nombre)}'">
+        <img class="w-full h-48 object-cover rounded-t-lg" src="${servicio.imagen}" onerror="this.src='https://placehold.co/600x400/1a1a2e/ffffff?text=${encodeURIComponent(servicio.nombre)}'">
         <div class="p-4">
           <span class="text-secondary text-[10px] font-bold uppercase tracking-widest mb-2 block">${badgeText}</span>
-          <h3 class="font-headline-md text-headline-md mb-4">${servicio.nombre}</h3>
-          <p class="text-on-surface-variant text-sm mb-4">${servicio.descripcion}</p>
-          <ul class="space-y-2 text-on-surface-variant text-sm mb-6">${caracteristicasHTML}</ul>
+          <h3 class="font-headline-md text-headline-md mb-2">${servicio.nombre}</h3>
+          <p class="text-on-surface-variant text-sm mb-3">${servicio.descripcion}</p>
+          <ul class="space-y-1 text-on-surface-variant text-sm mb-4">${caracteristicasHTML}</ul>
           <button class="view-details-btn font-label-bold text-primary flex items-center gap-2 hover:gap-4 transition-all" data-index="${idx}">${btnText} <span class="material-symbols-outlined">arrow_forward</span></button>
         </div>
       `;
@@ -880,6 +613,7 @@
     });
     document.querySelectorAll('.view-details-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const idx = parseInt(btn.getAttribute('data-index'));
         openModal(idx, lang);
       });
@@ -927,16 +661,7 @@
     setTimeout(() => document.querySelector('.modal-container').classList.add('active'), 10);
   }
 
-  document.getElementById('closeModalBtn')?.addEventListener('click', () => {
-    document.getElementById('serviceModal').classList.add('hidden');
-    document.body.classList.remove('modal-open');
-    document.querySelector('.modal-container').classList.remove('active');
-  });
-  document.getElementById('modalBackdrop')?.addEventListener('click', () => {
-    document.getElementById('serviceModal').classList.add('hidden');
-    document.body.classList.remove('modal-open');
-  });
-
+  // Contact form
   const contactForm = document.getElementById('contactForm');
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
@@ -950,149 +675,7 @@
     });
   }
 
-  // Chatbot
-  const chatbotToggle = document.getElementById('chatbotToggle');
-  const chatWindow = document.getElementById('chatWindow');
-  const chatClose = document.getElementById('chatClose');
-  const chatInput = document.getElementById('chatInput');
-  const chatSend = document.getElementById('chatSend');
-  const chatMessages = document.getElementById('chatMessages');
-
-  function addChatMessage(text, isUser = false) {
-    const div = document.createElement('div');
-    div.className = `flex items-start gap-2 ${isUser ? 'justify-end' : ''}`;
-    if (isUser) {
-      div.innerHTML = `<div class="bg-primary text-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm">${text}</p></div><div class="bg-gray-300 text-gray-700 rounded-full p-1.5"><i class="fas fa-user text-xs"></i></div>`;
-    } else {
-      div.innerHTML = `<div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm max-w-[85%]"><p class="text-sm">${text}</p></div>`;
-    }
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  // ========== CHATBOT IA - CLOUDFLARE WORKER ==========
-  // Cambia esta URL por la URL de tu Cloudflare Worker después de desplegarlo
-  const WORKER_URL = 'https://cali-chat.ardon7390.workers.dev';
-
-  // Historial de conversación para contexto
-  const chatHistory = [];
-
-  function buildSystemPrompt(lang) {
-    const serviciosLista = (serviciosData[lang] || serviciosData.es)
-      .map(s => `- ${s.nombre}: ${s.descripcion}`)
-      .join('\n');
-
-    if (lang === 'en') {
-      return `You are the virtual assistant for Cali Constructora y Desarrolladora Inmobiliaria, a professional construction and real estate company operating in El Salvador, United States, and Canada. You are helpful, professional, warm, and concise.
-
-COMPANY INFO:
-- Name: Cali Constructora y Desarrolladora Inmobiliaria
-- Phones El Salvador: +503 7217-9293 / +503 7920-7435
-- Phone USA: +1 346 610 24296
-- WhatsApp: +503 7953-9980
-- Email: iarq.home.solutions.sv@gmail.com
-- Social: Facebook /Cali503sv | Instagram @cali_cdi | TikTok @caliconstructora
-- 15+ years of experience
-
-SERVICES OFFERED:
-${serviciosLista}
-
-INSTRUCTIONS:
-- Answer in English since the user is in English mode.
-- Be helpful and informative about any of the services above.
-- For specific pricing, always say prices vary by project and invite them to contact via WhatsApp at +503 7953-9980 for a free quote.
-- Keep answers concise (3-5 sentences max unless more detail is needed).
-- You may use simple formatting like bullet points when listing things.
-- If asked something unrelated to the company, politely redirect to what you can help with.
-- Never make up services or information not listed above.`;
-    }
-
-    return `Eres el asistente virtual de Cali Constructora y Desarrolladora Inmobiliaria, una empresa profesional de construcción e inmobiliaria con presencia en El Salvador, Estados Unidos y Canadá. Eres amable, profesional y conciso.
-
-INFORMACIÓN DE LA EMPRESA:
-- Nombre: Cali Constructora y Desarrolladora Inmobiliaria
-- Teléfonos El Salvador: +503 7217-9293 / +503 7920-7435
-- Teléfono USA: +1 346 610 24296
-- WhatsApp: +503 7953-9980
-- Email: iarq.home.solutions.sv@gmail.com
-- Redes: Facebook /Cali503sv | Instagram @cali_cdi | TikTok @caliconstructora
-- Más de 15 años de experiencia
-
-SERVICIOS QUE OFRECEMOS:
-${serviciosLista}
-
-INSTRUCCIONES:
-- Responde siempre en español.
-- Sé útil e informativo sobre cualquiera de los servicios listados.
-- Para precios específicos, siempre indica que los precios varían según el proyecto e invita a contactar por WhatsApp al +503 7953-9980 para un presupuesto personalizado y gratuito.
-- Mantén las respuestas concisas (máximo 3-5 oraciones a menos que se necesite más detalle).
-- Puedes usar formato simple como viñetas cuando listes cosas.
-- Si te preguntan algo no relacionado con la empresa, redirige amablemente hacia lo que puedes ayudar.
-- Nunca inventes servicios ni información que no esté listada arriba.`;
-  }
-
-  function addTypingIndicator() {
-    const div = document.createElement('div');
-    div.id = 'typingIndicator';
-    div.className = 'flex items-start gap-2';
-    div.innerHTML = `<div class="bg-primary text-white rounded-full p-1.5"><i class="fas fa-robot text-xs"></i></div><div class="bg-white rounded-lg p-3 shadow-sm"><div class="flex gap-1 items-center h-4"><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0s"></span><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.15s"></span><span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0.3s"></span></div></div>`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  function removeTypingIndicator() {
-    document.getElementById('typingIndicator')?.remove();
-  }
-
-  async function botResponse(userMsg, lang) {
-    addTypingIndicator();
-    chatHistory.push({ role: 'user', content: userMsg });
-
-    // Limitar historial a últimos 10 mensajes para no exceder tokens
-    const recentHistory = chatHistory.slice(-10);
-
-    try {
-      const response = await fetch(WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system: buildSystemPrompt(lang),
-          messages: recentHistory
-        })
-      });
-
-      if (!response.ok) throw new Error('Worker error ' + response.status);
-
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || (lang === 'en' ? 'Sorry, I had an error. Please try again.' : 'Disculpa, ocurrió un error. Por favor intenta de nuevo.');
-
-      chatHistory.push({ role: 'assistant', content: reply });
-      removeTypingIndicator();
-      addChatMessage(reply);
-    } catch (err) {
-      removeTypingIndicator();
-      const t = staticTranslations[lang] || staticTranslations.es;
-      addChatMessage(t['chat-default']);
-    }
-  }
-
-  function sendChatMessage() {
-    const text = chatInput.value.trim();
-    if (!text) return;
-    addChatMessage(text, true);
-    chatInput.value = '';
-    botResponse(text, currentLang);
-  }
-
-  chatbotToggle?.addEventListener('click', () => chatWindow.classList.toggle('open'));
-  chatClose?.addEventListener('click', () => chatWindow.classList.remove('open'));
-  chatSend?.addEventListener('click', sendChatMessage);
-  chatInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
-
   // Cambio de idioma
-  const langSelect = document.getElementById('languageSelect');
-  const mobileLangSelect = document.getElementById('mobileLanguageSelect');
-  
   function setLanguage(lang) {
     currentLang = lang;
     const t = staticTranslations[lang];
@@ -1105,13 +688,10 @@ INSTRUCCIONES:
         else el.innerText = t[key];
       }
     });
-    // También traducir placeholders que usan data-i18n-placeholder directamente
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
       if (t[key]) el.placeholder = t[key];
     });
-    const searchPlaceholder = document.querySelector('#searchInput');
-    if (searchPlaceholder && t['search-placeholder']) searchPlaceholder.placeholder = t['search-placeholder'];
     const brandSub = document.getElementById('brandSubtitle');
     if (brandSub && t.brandSubtitle) brandSub.innerText = t.brandSubtitle;
     buildCards(lang);
@@ -1126,36 +706,36 @@ INSTRUCCIONES:
         servicioSelect.appendChild(option);
       });
     }
-    const chatGreeting = document.querySelector('[data-i18n="chat-greeting"]');
-    const chatPrompt = document.querySelector('[data-i18n="chat-prompt"]');
-    const chatPlaceholder = document.querySelector('#chatInput');
-    if (chatGreeting) chatGreeting.innerHTML = t['chat-greeting'];
-    if (chatPrompt) chatPrompt.innerHTML = t['chat-prompt'];
-    if (chatPlaceholder && t['chat-placeholder']) chatPlaceholder.placeholder = t['chat-placeholder'];
-  }
-  
-  if (langSelect) {
-    langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
-    if(mobileLangSelect) mobileLangSelect.addEventListener('change', (e) => setLanguage(e.target.value));
-    setLanguage('es');
   }
 
+  // Cerrar modal
+  document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+    document.getElementById('serviceModal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  });
+  document.getElementById('modalBackdrop')?.addEventListener('click', () => {
+    document.getElementById('serviceModal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  });
+
+  // Selectores de idioma
+  document.getElementById('languageSelect')?.addEventListener('change', (e) => setLanguage(e.target.value));
+  document.getElementById('mobileLanguageSelect')?.addEventListener('change', (e) => setLanguage(e.target.value));
+  
+  // Drawer
   function toggleDrawer() {
-    const drawer = document.getElementById('drawer');
-    const overlay = document.getElementById('overlay');
-    drawer?.classList.toggle('-translate-x-full');
-    overlay?.classList.toggle('hidden');
+    document.getElementById('drawer')?.classList.toggle('-translate-x-full');
+    document.getElementById('overlay')?.classList.toggle('hidden');
   }
   window.toggleDrawer = toggleDrawer;
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } });
-  }, { threshold: 0.15 });
-  document.querySelectorAll('.anim-fade-up, .anim-fade-in, .anim-slide-left, .anim-slide-right, .anim-scale-in, .services-bar').forEach(el => observer.observe(el));
-
+  // Inicializar
   buildCards('es');
+  setLanguage('es');
+  
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.addEventListener('input', (e) => filterServices(e.target.value));
+  
   const servicioSelect = document.getElementById('servicioSelect');
   if (servicioSelect) {
     serviciosData.es.forEach(s => {
@@ -1165,6 +745,12 @@ INSTRUCCIONES:
       servicioSelect.appendChild(option);
     });
   }
+
+  // Intersection Observer para animaciones
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.anim-fade-up, .anim-fade-in, .anim-slide-left, .anim-slide-right, .anim-scale-in, .services-bar').forEach(el => observer.observe(el));
 </script>
 </body>
 </html>
