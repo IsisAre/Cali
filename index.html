@@ -669,6 +669,10 @@ INSTRUCCIONES:
           messages: recentHistory
         })
       });
+      if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error del Worker/Anthropic:", errorData);
+      }
 
       if (!response.ok) throw new Error('Worker error ' + response.status);
 
