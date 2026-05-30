@@ -671,7 +671,8 @@ INSTRUCCIONES:
       });
       if (!response.ok) {
             const errorData = await response.json();
-            console.error("Error del Worker/Anthropic:", errorData);
+            console.error("Error del Worker/Anthropic:", JSON.stringify(errorData, null, 2));
+
       }
 
       if (!response.ok) throw new Error('Worker error ' + response.status);
