@@ -678,7 +678,7 @@ INSTRUCCIONES:
       if (!response.ok) throw new Error('Worker error ' + response.status);
 
       const data = await response.json();
-      const reply = data.content?.[0]?.text || (lang === 'en' ? 'Sorry, I had an error. Please try again.' : 'Disculpa, ocurrió un error. Por favor intenta de nuevo.');
+      const reply = data.reply || (lang === 'en' ? 'Sorry, I had an error. Please try again.' : 'Disculpa, ocurrió un error. Por favor intenta de nuevo.');
 
       chatHistory.push({ role: 'assistant', content: reply });
       removeTypingIndicator();
